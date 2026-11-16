@@ -1,0 +1,88 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}My Tickets – CampusFix{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/tickets/tickets.css' %}">
+{% endblock %}
+
+{% block nav_actions %}
+<a href="{% url 'tickets:ticket_create' %}" class="btn btn-primary btn-sm">＋ New Ticket</a>
+<div class="nav-notif-wrap">
+  <a href="{% url 'tickets:notifications' %}" class="btn btn-secondary btn-sm" id="btnNotifications">
+    🔔 Alerts
+    {% if unread_count %}<span class="notif-badge" id="badgeNotifCount">{{ unread_count }}</span>{% endif %}
+  </a>
+</div>
+<a href="{% url 'profile:profile' %}">Profile</a>
+<a href="{% url 'login:logout' %}" id="buttonLogout">Logout</a>
+{% endblock %}
+
+{% block content %}
+<div class="tickets-page">
+  <div class="page-header">
+    <h1 class="page-title">
+      🎫
+      {% if request.user.role in "admin staff" %}All Tickets{% else %}My Tickets{% endif %}
+    </h1>
+    <a href="{% url 'tickets:ticket_create' %}" class="btn btn-primary" id="btnCreateTicket">＋ Submit New Ticket</a>
+  </div>
+
+  {% if messages %}
+    {% for msg in messages %}
+      <div class="alert alert-{{ msg.tags }}" style="margin-bottom:1rem;padding:.85rem 1rem;border-radius:10px;background:{% if 'error' in msg.tags %}#ffebee{% else %}#e8f5e9{% endif %};color:{% if 'error' in msg.tags %}#c62828{% else %}#2e7d32{% endif %};">
+        {{ msg }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  {% if tickets %}
+  <div class="tickets-table-wrap">
+    <table class="tickets-table" id="tableTicketList">
+      <thead>
+        <tr>
+          <th>Title</th>
+          <th>Category</th>
+          <th>Location</th>
+          <th>Priority</th>
+          <th>Status</th>
+          <th>Submitted</th>
+          {% if request.user.role in "admin staff" %}<th>Reporter</th>{% endif %}
+        </tr>
+      </thead>
+      <tbody>
+        {% for ticket in tickets %}
+        <tr id="rowTicket{{ forloop.counter }}">
+          <td>
+            <a href="{% url 'tickets:ticket_detail' ticket.request_id %}" class="ticket-title-link" id="linkTicket{{ forloop.counter }}">
+              {{ ticket.title }}
+            </a>
+          </td>
+          <td>{{ ticket.category.category_name }}</td>
+          <td>{{ ticket.room.building.building_name }} / {{ ticket.room.room_name }}</td>
+          <td><span class="badge-priority badge-{{ ticket.priority }}">{{ ticket.priority }}</span></td>
+          <td>
+            <span class="badge-status badge-{{ ticket.status }}">
+              {% if ticket.status == "in_progress" %}In Progress{% elif ticket.status == "on_hold" %}On Hold{% else %}{{ ticket.status|title }}{% endif %}
+            </span>
+          </td>
+          <td>{{ ticket.created_at|date:"M d, Y" }}</td>
+          {% if request.user.role in "admin staff" %}
+          <td>{{ ticket.reporter.full_name }}</td>
+          {% endif %}
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state" id="emptyTicketState">
+    <div class="empty-icon">📋</div>
+    <h3>No Tickets Yet</h3>
+    <p>You haven't submitted any repair requests. Click the button above to get started.</p>
+    <a href="{% url 'tickets:ticket_create' %}" class="btn btn-primary" style="margin-top:1rem;">Submit First Ticket</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

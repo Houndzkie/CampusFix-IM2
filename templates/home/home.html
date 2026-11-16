@@ -1,0 +1,93 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}CampusFix - Dashboard{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/home/home.css' %}">
+<link rel="stylesheet" href="{% static 'css/tickets/tickets.css' %}">
+{% endblock %}
+
+{% block nav_actions %}
+<a href="{% url 'tickets:ticket_create' %}" class="btn btn-primary btn-sm">＋ New Ticket</a>
+<div class="nav-notif-wrap">
+  <a href="{% url 'tickets:notifications' %}" class="btn btn-secondary btn-sm" id="btnNotifications">
+    🔔
+    {% if unread_count %}<span class="notif-badge" id="badgeNotifCount">{{ unread_count }}</span>{% endif %}
+  </a>
+</div>
+<a href="{% url 'profile:profile' %}">Profile</a>
+<a href="{% url 'login:logout' %}" id="buttonLogout">Logout</a>
+{% endblock %}
+
+{% block content %}
+<div class="home-wrapper">
+    <div class="home-banner">
+        <h1 id="textviewHomeHeader">Dashboard</h1>
+        <p id="textviewHomeWelcome">
+            Welcome back, <strong>{{ request.user.full_name }}</strong>
+            <span style="opacity:.7;font-size:.9em;">({{ request.user.role|capfirst }})</span>
+        </p>
+        <p id="textviewSystemDesc">
+            CampusFix — Cebu Institute of Technology - University Maintenance &amp; Repair Request System.
+        </p>
+    </div>
+
+    <div class="home-content-body">
+
+        <!-- Stats Strip -->
+        <div class="overview-grid" id="statsGrid">
+            <div class="overview-card" id="statCardTotal">
+                <h3 class="overview-card-title">
+                    <span>🎫</span>
+                    {% if request.user.role in "admin staff" %}All Tickets{% else %}My Tickets{% endif %}
+                </h3>
+                <p class="stat-number" id="statTotal">{{ total_tickets }}</p>
+                <a href="{% url 'tickets:ticket_list' %}" class="btn btn-primary btn-sm" style="margin-top:.75rem;">View All</a>
+            </div>
+
+            <div class="overview-card" id="statCardOpen">
+                <h3 class="overview-card-title"><span>🟡</span> Open</h3>
+                <p class="stat-number" id="statOpen">{{ open_tickets }}</p>
+                <p class="overview-card-desc">Awaiting assignment</p>
+            </div>
+
+            <div class="overview-card" id="statCardInProgress">
+                <h3 class="overview-card-title"><span>🔧</span> In Progress</h3>
+                <p class="stat-number" id="statInProgress">{{ in_progress }}</p>
+                <p class="overview-card-desc">Being worked on</p>
+            </div>
+
+            <div class="overview-card" id="statCardResolved">
+                <h3 class="overview-card-title"><span>✅</span> Resolved</h3>
+                <p class="stat-number" id="statResolved">{{ resolved }}</p>
+                <p class="overview-card-desc">Completed repairs</p>
+            </div>
+        </div>
+
+        <!-- Quick Actions -->
+        <div style="margin-top:2rem;">
+            <h2 style="font-size:1rem;text-transform:uppercase;letter-spacing:.08em;color:#888;margin-bottom:1rem;">Quick Actions</h2>
+            <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+                <a href="{% url 'tickets:ticket_create' %}" class="btn btn-primary" id="btnQuickCreate">
+                    📝 Submit Repair Request
+                </a>
+                <a href="{% url 'tickets:ticket_list' %}" class="btn btn-secondary" id="btnQuickList">
+                    📋 View All Tickets
+                </a>
+                <a href="{% url 'tickets:notifications' %}" class="btn btn-secondary" id="btnQuickNotif">
+                    🔔 Notifications{% if unread_count %} ({{ unread_count }}){% endif %}
+                </a>
+                <a href="{% url 'profile:profile' %}" class="btn btn-secondary" id="btnQuickProfile">
+                    👤 My Profile
+                </a>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/home/home.js' %}"></script>
+{% endblock %}

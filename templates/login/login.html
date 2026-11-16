@@ -1,0 +1,73 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}CampusFix - CIT-U Login{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/login/login.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="auth-card">
+    <div class="auth-card-banner">
+        <span class="auth-badge">CIT-University</span>
+        <h1 id="textviewTitle">CampusFix</h1>
+        <p id="textviewSubtitle">Maintenance & Repair Request System</p>
+    </div>
+
+    <div class="auth-card-body">
+        {% if messages %}
+            {% for message in messages %}
+                <div id="textviewSuccessMessage" class="alert-success">
+                    {{ message }}
+                </div>
+            {% endfor %}
+        {% endif %}
+
+        {% if error_message %}
+            <div id="textviewErrorMessage" class="alert-error">
+                {{ error_message }}
+            </div>
+        {% endif %}
+
+        <form method="POST" action="{% url 'login:login' %}">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label id="textviewUsernameLabel" for="edittextSchoolId">School ID Number</label>
+                <input
+                    type="text"
+                    id="edittextSchoolId"
+                    name="school_id"
+                    placeholder="Enter your School ID (e.g. 20-1234-567)"
+                    required
+                    autocomplete="username"
+                >
+            </div>
+
+            <div class="form-group">
+                <label id="textviewPasswordLabel" for="edittextPassword">Password</label>
+                <input
+                    type="password"
+                    id="edittextPassword"
+                    name="password"
+                    placeholder="Enter your password"
+                    required
+                    autocomplete="current-password"
+                >
+            </div>
+
+            <button type="submit" id="buttonLogin" class="btn-citu-primary">Sign In</button>
+        </form>
+
+        <p id="textviewPromptRegister">
+            Need an account?
+            <a id="buttonRegister" href="{% url 'register:register' %}">Register here</a>
+        </p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/login/login.js' %}"></script>
+{% endblock %}

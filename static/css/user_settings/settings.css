@@ -1,0 +1,79 @@
+/* ==========================================================================
+   Settings feature
+   ========================================================================== */
+
+.settings-card
+{
+    width: 100%;
+    max-width: 520px;
+    background-color: var(--color-surface);
+    border-radius: 16px;
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+}
+
+.settings-card-banner
+{
+    background: linear-gradient(135deg, var(--citu-maroon) 0%, var(--citu-maroon-dark) 100%);
+    color: #ffffff;
+    padding: 2rem;
+    text-align: center;
+    border-bottom: 3px solid var(--citu-gold);
+}
+
+.settings-card-banner h1
+{
+    font-size: 1.85rem;
+    font-weight: 800;
+    margin-bottom: 0.35rem;
+}
+
+.settings-card-banner p
+{
+    font-size: 0.95rem;
+    color: var(--citu-gold);
+    font-weight: 500;
+}
+
+.settings-card-body
+{
+    padding: 2rem;
+}
+
+.settings-toggle-row
+{
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 1rem 0;
+    border-bottom: 1px solid var(--color-border);
+}
+
+.settings-toggle-row label
+{
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: var(--citu-maroon-deep);
+}
+
+.settings-toggle-desc
+{
+    font-size: 0.8rem;
+    color: var(--color-text-muted);
+    margin-top: 0.2rem;
+}
+
+.settings-toggle-row input[type="checkbox"]
+{
+    width: 20px;
+    height: 20px;
+    accent-color: var(--citu-maroon);
+    cursor: pointer;
+}
+
+.settings-card-body .btn-citu-primary
+{
+    margin-top: 1.5rem;
+}

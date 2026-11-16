@@ -1,0 +1,35 @@
+{% load static %}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block title %}CampusFix - CIT-U Facilities & Maintenance{% endblock %}</title>
+    <link rel="stylesheet" href="{% static 'css/common/base.css' %}">
+    {% block extra_css %}{% endblock %}
+</head>
+<body class="{% if user.is_authenticated and user.settings.dark_mode %}dark-mode{% endif %}">
+    <header class="citu-navbar">
+        <a href="{% url 'home:home' %}" class="citu-brand">
+            <div class="citu-brand-emblem">CF</div>
+            <div class="citu-brand-text-block">
+                <span class="citu-brand-title">CampusFix</span>
+                <span class="citu-brand-subtitle">CIT-University Maintenance Portal</span>
+            </div>
+        </a>
+        <div class="citu-nav-right">
+            {% block nav_actions %}{% endblock %}
+        </div>
+    </header>
+
+    <main class="main-container">
+        {% block content %}{% endblock %}
+    </main>
+
+    <footer class="citu-footer">
+        <p>&copy; 2026 <span>Cebu Institute of Technology - University</span>. CampusFix Maintenance & Repair Request System.</p>
+    </footer>
+
+    {% block extra_js %}{% endblock %}
+</body>
+</html>

@@ -1,0 +1,140 @@
+/* ==========================================================================
+   Home feature - authenticated landing screen
+   ========================================================================== */
+
+.home-wrapper
+{
+    width: 100%;
+    max-width: 960px;
+    background-color: var(--color-surface);
+    border-radius: 16px;
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+}
+
+.home-banner
+{
+    background: linear-gradient(135deg, var(--citu-maroon-deep) 0%, var(--citu-maroon) 70%, var(--citu-maroon-light) 100%);
+    border-bottom: 4px solid var(--citu-gold);
+    padding: 3rem 2.5rem;
+    color: #ffffff;
+    position: relative;
+}
+
+#textviewHomeHeader
+{
+    font-size: 2.25rem;
+    font-weight: 900;
+    letter-spacing: 1px;
+    color: #ffffff;
+    margin-bottom: 0.75rem;
+    text-transform: uppercase;
+    display: inline-block;
+    border-bottom: 3px solid var(--citu-gold);
+    padding-bottom: 0.35rem;
+}
+
+#textviewHomeWelcome
+{
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--citu-gold);
+    margin-bottom: 0.75rem;
+}
+
+#textviewSystemDesc
+{
+    font-size: 1rem;
+    color: #f1f5f9;
+    max-width: 700px;
+    line-height: 1.6;
+}
+
+.home-content-body
+{
+    padding: 2.5rem;
+}
+
+.user-greeting
+{
+    font-size: 1.1rem;
+    color: var(--citu-maroon);
+    font-weight: 600;
+    margin-bottom: 1.5rem;
+}
+
+.overview-grid
+{
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+    gap: 1.5rem;
+    margin-top: 1.5rem;
+}
+
+.overview-card
+{
+    background-color: #fafbfc;
+    border: 1px solid var(--color-border);
+    border-top: 4px solid var(--citu-maroon);
+    border-radius: 10px;
+    padding: 1.5rem;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+
+.overview-card:hover
+{
+    transform: translateY(-3px);
+    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.08);
+}
+
+.overview-card-title
+{
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: var(--citu-maroon-deep);
+    margin-bottom: 0.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.overview-card-desc
+{
+    font-size: 0.9rem;
+    color: var(--color-text-muted);
+    line-height: 1.5;
+}
+
+@media (max-width: 640px)
+{
+    .home-banner
+    {
+        padding: 2rem 1.5rem;
+    }
+
+    #textviewHomeHeader
+    {
+        font-size: 1.75rem;
+    }
+
+    #textviewHomeWelcome
+    {
+        font-size: 1.1rem;
+    }
+
+    .home-content-body
+    {
+        padding: 1.5rem;
+    }
+}
+
+/* Stat number on dashboard cards */
+.stat-number {
+    font-size: 2.8rem;
+    font-weight: 900;
+    color: var(--citu-maroon-deep, #4a0000);
+    line-height: 1;
+    margin: .4rem 0 .2rem;
+}
+

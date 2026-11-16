@@ -1,0 +1,58 @@
+/* ==========================================================================
+   Profile feature
+   ========================================================================== */
+
+.profile-card
+{
+    width: 100%;
+    max-width: 520px;
+    background-color: var(--color-surface);
+    border-radius: 16px;
+    border: 1px solid var(--color-border);
+    box-shadow: var(--shadow-card);
+    overflow: hidden;
+}
+
+.profile-card-banner
+{
+    background: linear-gradient(135deg, var(--citu-maroon) 0%, var(--citu-maroon-dark) 100%);
+    color: #ffffff;
+    padding: 2rem;
+    text-align: center;
+    border-bottom: 3px solid var(--citu-gold);
+}
+
+.profile-card-banner h1
+{
+    font-size: 1.85rem;
+    font-weight: 800;
+    margin-bottom: 0.35rem;
+}
+
+.profile-card-banner p
+{
+    font-size: 0.95rem;
+    color: var(--citu-gold);
+    font-weight: 500;
+}
+
+.profile-card-body
+{
+    padding: 2rem;
+}
+
+.profile-avatar
+{
+    display: block;
+    width: 96px;
+    height: 96px;
+    border-radius: 50%;
+    object-fit: cover;
+    margin: 0 auto 1.5rem auto;
+    border: 3px solid var(--citu-gold);
+}
+
+.profile-card-body textarea
+{
+    resize: vertical;
+}

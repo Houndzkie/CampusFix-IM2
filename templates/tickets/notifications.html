@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Notifications – CampusFix{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/tickets/tickets.css' %}">
+{% endblock %}
+
+{% block nav_actions %}
+<a href="{% url 'tickets:ticket_list' %}">← Tickets</a>
+<a href="{% url 'login:logout' %}" id="buttonLogout">Logout</a>
+{% endblock %}
+
+{% block content %}
+<div class="tickets-page" style="max-width:780px;">
+  <div class="page-header">
+    <h1 class="page-title">🔔 Notifications <span style="font-size:1rem;font-weight:500;color:#888;">({{ unread_count }} unread)</span></h1>
+    {% if unread_count %}
+    <form method="post" action="{% url 'tickets:mark_all_read' %}" id="formMarkAllRead">
+      {% csrf_token %}
+      <button type="submit" class="btn btn-secondary btn-sm" id="btnMarkAllRead">Mark All Read</button>
+    </form>
+    {% endif %}
+  </div>
+
+  {% if messages %}
+    {% for msg in messages %}
+      <div style="margin-bottom:1rem;padding:.85rem 1rem;border-radius:10px;background:#e8f5e9;color:#2e7d32;">{{ msg }}</div>
+    {% endfor %}
+  {% endif %}
+
+  {% if notifications %}
+  <div class="notif-list" id="listNotifications">
+    {% for notif in notifications %}
+    <div class="notif-item {% if not notif.is_read %}unread{% endif %}" id="notif{{ notif.notification_id }}">
+      <div class="notif-icon">{% if notif.is_read %}📭{% else %}📬{% endif %}</div>
+      <div class="notif-body">
+        <div class="notif-msg">{{ notif.message }}</div>
+        <div class="notif-time">{{ notif.created_at|date:"M d, Y H:i" }}</div>
+        <div style="margin-top:.4rem;">
+          <a href="{% url 'tickets:ticket_detail' notif.request_id %}" class="btn btn-secondary btn-sm">View Ticket</a>
+        </div>
+      </div>
+      <div class="notif-actions">
+        {% if not notif.is_read %}
+        <form method="post" action="{% url 'tickets:mark_read' notif.notification_id %}">
+          {% csrf_token %}
+          <input type="hidden" name="next" value="tickets:notifications">
+          <button type="submit" class="btn btn-success btn-sm" id="btnMarkRead{{ notif.notification_id }}">✓ Read</button>
+        </form>
+        {% endif %}
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  {% else %}
+  <div class="empty-state" id="emptyNotifState">
+    <div class="empty-icon">🔕</div>
+    <h3>No Notifications</h3>
+    <p>You're all caught up! Notifications will appear here when ticket statuses change or comments are posted.</p>
+    <a href="{% url 'tickets:ticket_list' %}" class="btn btn-primary" style="margin-top:1rem;">Go to Tickets</a>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,233 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}#{{ ticket.title }} – CampusFix{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/tickets/tickets.css' %}">
+{% endblock %}
+
+{% block nav_actions %}
+<a href="{% url 'tickets:ticket_list' %}">← All Tickets</a>
+<div class="nav-notif-wrap">
+  <a href="{% url 'tickets:notifications' %}" class="btn btn-secondary btn-sm">
+    🔔{% if unread_count %}<span class="notif-badge">{{ unread_count }}</span>{% endif %}
+  </a>
+</div>
+<a href="{% url 'login:logout' %}" id="buttonLogout">Logout</a>
+{% endblock %}
+
+{% block content %}
+<div class="tickets-page">
+
+  {% if messages %}
+    {% for msg in messages %}
+      <div style="margin-bottom:1rem;padding:.85rem 1rem;border-radius:10px;background:{% if 'error' in msg.tags %}#ffebee{% else %}#e8f5e9{% endif %};color:{% if 'error' in msg.tags %}#c62828{% else %}#2e7d32{% endif %};">{{ msg }}</div>
+    {% endfor %}
+  {% endif %}
+
+  <!-- Page title + status -->
+  <div class="page-header">
+    <div>
+      <h1 class="page-title" style="font-size:1.4rem;">{{ ticket.title }}</h1>
+      <div style="margin-top:.4rem;display:flex;gap:.5rem;flex-wrap:wrap;align-items:center;">
+        <span class="badge-status badge-{{ ticket.status }}">{{ ticket.status|title }}</span>
+        <span class="badge-priority badge-{{ ticket.priority }}">{{ ticket.priority|title }}</span>
+        <span style="font-size:.8rem;color:#888;">Submitted {{ ticket.created_at|date:"M d, Y" }}</span>
+      </div>
+    </div>
+    <a href="{% url 'tickets:ticket_create' %}" class="btn btn-primary btn-sm">＋ New Ticket</a>
+  </div>
+
+  <div class="detail-grid">
+    <!-- ── LEFT COLUMN ─────────────────────────────────────────── -->
+    <div>
+
+      <!-- Ticket meta -->
+      <div class="detail-card" id="cardTicketMeta">
+        <h2>Ticket Details</h2>
+        <div class="meta-grid">
+          <div class="meta-item">
+            <span>Reporter</span>
+            <span>{{ ticket.reporter.full_name }}</span>
+          </div>
+          <div class="meta-item">
+            <span>Assigned To</span>
+            <span>{{ ticket.assigned_staff.full_name|default:"Unassigned" }}</span>
+          </div>
+          <div class="meta-item">
+            <span>Category</span>
+            <span>{{ ticket.category.category_name }}</span>
+          </div>
+          <div class="meta-item">
+            <span>Location</span>
+            <span>{{ ticket.room.building.building_name }} / {{ ticket.room.room_name }} (Floor {{ ticket.room.floor_number }})</span>
+          </div>
+          <div class="meta-item">
+            <span>Created</span>
+            <span>{{ ticket.created_at|date:"M d, Y H:i" }}</span>
+          </div>
+          <div class="meta-item">
+            <span>Last Updated</span>
+            <span>{{ ticket.updated_at|date:"M d, Y H:i" }}</span>
+          </div>
+          {% if ticket.completed_at %}
+          <div class="meta-item">
+            <span>Completed</span>
+            <span>{{ ticket.completed_at|date:"M d, Y H:i" }}</span>
+          </div>
+          {% endif %}
+        </div>
+        <div style="margin-top:1.2rem;">
+          <span style="font-size:.73rem;text-transform:uppercase;letter-spacing:.07em;color:#888;">Description</span>
+          <p style="margin-top:.35rem;line-height:1.6;color:#333;">{{ ticket.description }}</p>
+        </div>
+      </div>
+
+      <!-- Photos -->
+      {% if photos %}
+      <div class="detail-card" id="cardTicketPhotos">
+        <h2>📷 Attached Photos</h2>
+        <div class="photo-grid">
+          {% for photo in photos %}
+          <img src="{{ photo.photo_url }}" alt="Photo {{ forloop.counter }}"
+               onclick="window.open('{{ photo.photo_url }}','_blank')"
+               id="imgPhoto{{ forloop.counter }}">
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      <!-- Status History Timeline -->
+      <div class="detail-card" id="cardStatusHistory">
+        <h2>🕓 Status History</h2>
+        {% if history %}
+        <div class="timeline">
+          {% for h in history %}
+          <div class="timeline-item" id="historyItem{{ forloop.counter }}">
+            <div class="timeline-dot"></div>
+            <div class="timeline-meta">
+              {{ h.changed_at|date:"M d, Y H:i" }} –
+              <strong>{{ h.changed_by.full_name|default:"System" }}</strong>
+            </div>
+            <div class="timeline-body">
+              {% if h.old_status %}
+                <span class="badge-status badge-{{ h.old_status }}" style="font-size:.65rem;">{{ h.old_status }}</span>
+                → <span class="badge-status badge-{{ h.new_status }}" style="font-size:.65rem;">{{ h.new_status }}</span>
+              {% else %}
+                Ticket opened as <span class="badge-status badge-{{ h.new_status }}" style="font-size:.65rem;">{{ h.new_status }}</span>
+              {% endif %}
+              {% if h.remarks %}
+              <p style="margin:.5rem 0 0;font-size:.83rem;color:#555;">{{ h.remarks }}</p>
+              {% endif %}
+            </div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p style="color:#aaa;font-size:.9rem;">No status changes recorded yet.</p>
+        {% endif %}
+      </div>
+
+      <!-- Comments -->
+      <div class="detail-card" id="cardComments">
+        <h2>💬 Comments</h2>
+        {% if comments %}
+        <div class="comment-list">
+          {% for c in comments %}
+          <div class="comment-bubble" id="comment{{ c.comment_id }}">
+            <div class="comment-author">
+              {{ c.author.full_name }}
+              <span class="comment-time">{{ c.created_at|date:"M d, Y H:i" }}</span>
+            </div>
+            <div class="comment-body">{{ c.body }}</div>
+          </div>
+          {% endfor %}
+        </div>
+        {% else %}
+        <p style="color:#aaa;font-size:.9rem;margin-bottom:1rem;">No comments yet. Be the first to comment.</p>
+        {% endif %}
+
+        <form method="post" action="{% url 'tickets:post_comment' ticket.request_id %}" id="formPostComment">
+          {% csrf_token %}
+          <div class="form-group">
+            <label for="inputCommentBody">Add a Comment</label>
+            <textarea id="inputCommentBody" name="body" rows="3"
+                      placeholder="Write your comment here…"></textarea>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm" style="margin-top:.6rem;" id="btnPostComment">
+            Post Comment
+          </button>
+        </form>
+      </div>
+
+    </div>
+
+    <!-- ── RIGHT COLUMN (sidebar) ─────────────────────────────── -->
+    <div>
+
+      <!-- Status Update (admin/staff only) -->
+      {% if request.user.role in "admin staff" %}
+      <div class="sidebar-panel" id="panelStatusUpdate">
+        <h3>⚙️ Update Status</h3>
+        <form method="post" action="{% url 'tickets:update_status' ticket.request_id %}" id="formUpdateStatus">
+          {% csrf_token %}
+
+          <div class="form-group">
+            <label for="selectNewStatus">New Status</label>
+            <select id="selectNewStatus" name="new_status" required>
+              {% for s in status_choices %}
+              <option value="{{ s }}" {% if s == ticket.status %}selected{% endif %}>{{ s|title }}</option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group" style="margin-top:.75rem;">
+            <label for="selectAssignedStaff">Assign To</label>
+            <select id="selectAssignedStaff" name="assigned_staff_id">
+              <option value="">— Keep Current —</option>
+              {% for staff in staff_users %}
+              <option value="{{ staff.user_id }}"
+                {% if ticket.assigned_staff and ticket.assigned_staff.user_id == staff.user_id %}selected{% endif %}>
+                {{ staff.full_name }} ({{ staff.role }})
+              </option>
+              {% endfor %}
+            </select>
+          </div>
+
+          <div class="form-group" style="margin-top:.75rem;">
+            <label for="inputRemarks">Remarks</label>
+            <textarea id="inputRemarks" name="remarks" rows="3"
+                      placeholder="Optional notes about this update…"></textarea>
+          </div>
+
+          <button type="submit" class="btn btn-primary" style="width:100%;margin-top:1rem;" id="btnUpdateStatus">
+            Save Update
+          </button>
+        </form>
+      </div>
+      {% endif %}
+
+      <!-- Quick Info Card -->
+      <div class="sidebar-panel" style="margin-top:1.25rem;" id="panelQuickInfo">
+        <h3>📌 Quick Info</h3>
+        <div style="display:flex;flex-direction:column;gap:.65rem;font-size:.87rem;">
+          <div>
+            <span style="color:#888;display:block;font-size:.72rem;text-transform:uppercase;">Ticket ID</span>
+            <code style="font-size:.78rem;word-break:break-all;">{{ ticket.request_id }}</code>
+          </div>
+          <div>
+            <span style="color:#888;display:block;font-size:.72rem;text-transform:uppercase;">Status</span>
+            <span class="badge-status badge-{{ ticket.status }}">{{ ticket.status }}</span>
+          </div>
+          <div>
+            <span style="color:#888;display:block;font-size:.72rem;text-transform:uppercase;">Priority</span>
+            <span class="badge-priority badge-{{ ticket.priority }}">{{ ticket.priority }}</span>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</div>
+{% endblock %}

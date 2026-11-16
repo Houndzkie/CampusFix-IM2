@@ -1,0 +1,181 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Submit Ticket – CampusFix{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/tickets/tickets.css' %}">
+{% endblock %}
+
+{% block nav_actions %}
+<a href="{% url 'tickets:ticket_list' %}">← My Tickets</a>
+<a href="{% url 'login:logout' %}" id="buttonLogout">Logout</a>
+{% endblock %}
+
+{% block content %}
+<div class="tickets-page" style="max-width:780px;">
+  <div class="page-header">
+    <h1 class="page-title">📝 Submit Repair Request</h1>
+  </div>
+
+  {% if messages %}
+    {% for msg in messages %}
+      <div style="margin-bottom:1rem;padding:.85rem 1rem;border-radius:10px;background:{% if 'error' in msg.tags %}#ffebee{% else %}#e8f5e9{% endif %};color:{% if 'error' in msg.tags %}#c62828{% else %}#2e7d32{% endif %};">
+        {{ msg }}
+      </div>
+    {% endfor %}
+  {% endif %}
+
+  <div class="form-card">
+    <form method="post" enctype="multipart/form-data" id="formCreateTicket">
+      {% csrf_token %}
+
+      <!-- ── Basic Info ────────────────────────────────────────── -->
+      <div class="form-section-title">Ticket Details</div>
+
+      <div class="form-group">
+        <label for="inputTitle">Title *</label>
+        <input type="text" id="inputTitle" name="title" placeholder="e.g. Air conditioning not working in Room 301"
+               value="{{ form_data.title|default:'' }}" maxlength="100" required>
+      </div>
+
+      <div class="form-group" style="margin-top:.85rem;">
+        <label for="inputDescription">Description *</label>
+        <textarea id="inputDescription" name="description" rows="4"
+                  placeholder="Describe the issue in detail…" required>{{ form_data.description|default:'' }}</textarea>
+      </div>
+
+      <div class="form-row" style="margin-top:.85rem;">
+        <div class="form-group">
+          <label for="selectCategory">Category *</label>
+          <select id="selectCategory" name="category_id" required>
+            <option value="">— Select Category —</option>
+            {% for cat in categories %}
+              <option value="{{ cat.category_id }}"
+                {% if form_data.category_id == cat.category_id|stringformat:"s" %}selected{% endif %}>
+                {{ cat.category_name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="selectPriority">Priority</label>
+          <select id="selectPriority" name="priority">
+            {% for p in priority_choices %}
+              <option value="{{ p }}" {% if form_data.priority == p %}selected{% elif not form_data.priority and p == "medium" %}selected{% endif %}>
+                {{ p|capfirst }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+
+      <!-- ── Location ──────────────────────────────────────────── -->
+      <div class="form-section-title">Location</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="selectBuilding">Building *</label>
+          <select id="selectBuilding" name="building_id" required>
+            <option value="">— Select Building —</option>
+            {% for b in buildings %}
+              <option value="{{ b.building_id }}"
+                {% if form_data.building_id == b.building_id|stringformat:"s" %}selected{% endif %}>
+                {{ b.building_code }} – {{ b.building_name }}
+              </option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="selectRoom">Room *</label>
+          <select id="selectRoom" name="room_id" required>
+            <option value="">— Select Building First —</option>
+            {% if form_data.room_id %}
+              <option value="{{ form_data.room_id }}" selected>Previously selected room</option>
+            {% endif %}
+          </select>
+        </div>
+      </div>
+
+      <!-- ── Photos ─────────────────────────────────────────────── -->
+      <div class="form-section-title">Photos (optional)</div>
+      <div class="photo-dropzone" id="photoDropzone">
+        <div class="dz-icon">📸</div>
+        <p>Drag &amp; drop photos here, or <strong>click to browse</strong></p>
+        <p>Supports JPG, PNG, WEBP. Max 5 files.</p>
+        <input type="file" id="inputPhotos" name="photos" accept="image/*" multiple
+               style="display:none;">
+      </div>
+      <div class="photo-preview-grid" id="photoPreviewGrid"></div>
+
+      <div style="margin-top:2rem;display:flex;gap:.75rem;justify-content:flex-end;">
+        <a href="{% url 'tickets:ticket_list' %}" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary" id="btnSubmitTicket">🚀 Submit Ticket</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// ── Cascading room select ─────────────────────────────────────────
+const buildingSel = document.getElementById('selectBuilding');
+const roomSel     = document.getElementById('selectRoom');
+const roomsUrl    = "{% url 'tickets:rooms_by_building' %}";
+
+buildingSel.addEventListener('change', function() {
+  const bid = this.value;
+  roomSel.innerHTML = '<option value="">Loading…</option>';
+  if (!bid) { roomSel.innerHTML = '<option value="">— Select Building First —</option>'; return; }
+
+  fetch(`${roomsUrl}?building_id=${bid}`)
+    .then(r => r.json())
+    .then(data => {
+      roomSel.innerHTML = '<option value="">— Select Room —</option>';
+      data.rooms.forEach(room => {
+        const opt = document.createElement('option');
+        opt.value = room.room_id;
+        opt.textContent = `${room.room_name} (Floor ${room.floor_number})`;
+        roomSel.appendChild(opt);
+      });
+    })
+    .catch(() => { roomSel.innerHTML = '<option value="">Error loading rooms</option>'; });
+});
+
+// ── Photo drag & drop / preview ──────────────────────────────────
+const dropzone  = document.getElementById('photoDropzone');
+const fileInput = document.getElementById('inputPhotos');
+const previewGrid = document.getElementById('photoPreviewGrid');
+
+dropzone.addEventListener('click', () => fileInput.click());
+
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+dropzone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropzone.classList.remove('dragover');
+  handleFiles(e.dataTransfer.files);
+});
+
+fileInput.addEventListener('change', () => handleFiles(fileInput.files));
+
+function handleFiles(files) {
+  previewGrid.innerHTML = '';
+  const MAX = 5;
+  const limited = Array.from(files).slice(0, MAX);
+  const transfer = new DataTransfer();
+  limited.forEach(file => transfer.items.add(file));
+  fileInput.files = transfer.files;
+  limited.forEach(file => {
+    const reader = new FileReader();
+    reader.onload = e => {
+      const img = document.createElement('img');
+      img.src = e.target.result;
+      img.alt = file.name;
+      previewGrid.appendChild(img);
+    };
+    reader.readAsDataURL(file);
+  });
+}
+</script>
+{% endblock %}

@@ -1,0 +1,115 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}CampusFix - Register Account{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/register/register.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="auth-card">
+    <div class="auth-card-banner">
+        <span class="auth-badge">New User Registration</span>
+        <h1 id="textviewTitle">Create Account</h1>
+        <p id="textviewSubtitle">Join CIT-U CampusFix Maintenance Portal</p>
+    </div>
+
+    <div class="auth-card-body">
+        <a id="buttonBackToLogin" href="{% url 'login:login' %}">
+            &larr; Back to Login
+        </a>
+
+        {% if error_message %}
+            <div id="textviewErrorMessage" class="alert-error">
+                {{ error_message }}
+            </div>
+        {% endif %}
+
+        <form method="POST" action="{% url 'register:register' %}">
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label id="textviewFullNameLabel" for="edittextFullName">Full Name</label>
+                <input
+                    type="text"
+                    id="edittextFullName"
+                    name="full_name"
+                    value="{{ form_data.full_name|default:'' }}"
+                    placeholder="e.g., Juan Dela Cruz"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label id="textviewEmailLabel" for="edittextEmail">CIT-U Institutional Email</label>
+                <input
+                    type="email"
+                    id="edittextEmail"
+                    name="email"
+                    value="{{ form_data.email|default:'' }}"
+                    placeholder="e.g., juan.delacruz@cit.edu"
+                    required
+                >
+            </div>
+
+            <div class="form-group">
+                <label id="textviewSchoolIdLabel" for="edittextSchoolId">School ID Number</label>
+                <input
+                    type="text"
+                    id="edittextSchoolId"
+                    name="school_id"
+                    value="{{ form_data.school_id|default:'' }}"
+                    placeholder="e.g., 20-1234-567"
+                    required
+                    autocomplete="username"
+                >
+            </div>
+
+            <div class="form-group">
+                <label id="textviewRoleLabel" for="selectRole">Role</label>
+                <select id="selectRole" name="role">
+                    <option value="student" {% if form_data.role == 'student' or not form_data.role %}selected{% endif %}>Student</option>
+                    <option value="faculty" {% if form_data.role == 'faculty' %}selected{% endif %}>Faculty</option>
+                    <option value="staff" {% if form_data.role == 'staff' %}selected{% endif %}>Staff</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label id="textviewPasswordLabel" for="edittextPassword">Password</label>
+                <input
+                    type="password"
+                    id="edittextPassword"
+                    name="password"
+                    placeholder="Minimum 6 characters"
+                    required
+                    autocomplete="new-password"
+                >
+            </div>
+
+            <div class="form-group">
+                <label id="textviewConfirmPasswordLabel" for="edittextConfirmPassword">Confirm Password</label>
+                <input
+                    type="password"
+                    id="edittextConfirmPassword"
+                    name="confirm_password"
+                    placeholder="Re-type your password"
+                    required
+                    autocomplete="new-password"
+                >
+            </div>
+
+            <button type="submit" id="buttonSubmitRegister" class="btn-citu-primary">Register Account</button>
+        </form>
+
+        <p id="textviewPromptLogin">
+            Already have an account?
+            <a id="buttonBackToLoginLink" href="{% url 'login:login' %}">Sign in here</a>
+        </p>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/register/register.js' %}"></script>
+{% endblock %}
