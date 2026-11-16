@@ -1,0 +1,124 @@
+﻿commit 13d7e2733ccdfd3129a0edeff9e4958a89f0bd65
+Author: Houndzkie <helge.justine.dano@gmail.com>
+Date:   2026-11-16 16:58:50 +0800
+
+    Use a fresh SQLite database for CampusFix auth
+    
+    Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+
+ .env.example           |  1 +
+ .gitignore             |  2 +-
+ apps/register/tests.py | 25 ++++++++++++++++++++++++-
+ config/settings.py     |  5 ++++-
+ 4 files changed, 30 insertions(+), 3 deletions(-)
+
+commit 524d25b1d614cf027cb9340d7da51460f5698017
+Author: Houndzkie <helge.justine.dano@gmail.com>
+Date:   2026-11-16 16:46:31 +0800
+
+    Secure Django settings for public publishing
+    
+    Co-authored-by: Copilot <223556219+Copilot@users.noreply.github.com>
+
+ .env.example       |  1 +
+ config/settings.py | 23 +++++++++++++++++------
+ 2 files changed, 18 insertions(+), 6 deletions(-)
+
+commit 560ec4e752d99ae03d3a1878e7c8b69827cf4996
+Author: Houndzkie <helge.justine.dano@gmail.com>
+Date:   2026-11-16 16:23:57 +0800
+
+    Finalize CampusFix local SQLite configuration and ticket workflow
+
+ .env.example                                       |   6 +
+ .gitignore                                         |   9 +
+ apps/__init__.py                                   |   0
+ apps/home/__init__.py                              |   0
+ apps/home/admin.py                                 |  76 +++++
+ apps/home/apps.py                                  |   7 +
+ apps/home/migrations/0001_initial.py               | 169 +++++++++
+ apps/home/migrations/__init__.py                   |   0
+ apps/home/models.py                                | 152 +++++++++
+ apps/home/tests.py                                 |   3 +
+ apps/home/urls.py                                  |   9 +
+ apps/home/views.py                                 |  31 ++
+ apps/login/__init__.py                             |   0
+ apps/login/admin.py                                |   3 +
+ apps/login/apps.py                                 |   7 +
+ apps/login/migrations/__init__.py                  |   0
+ apps/login/models.py                               |   4 +
+ apps/login/tests.py                                |   3 +
+ apps/login/urls.py                                 |  10 +
+ apps/login/views.py                                |  33 ++
+ apps/profile/__init__.py                           |   0
+ apps/profile/admin.py                              |   5 +
+ apps/profile/apps.py                               |   7 +
+ apps/profile/migrations/0001_initial.py            |  25 ++
+ apps/profile/migrations/0002_alter_profile_user.py |  21 ++
+ apps/profile/migrations/__init__.py                |   0
+ apps/profile/models.py                             |  18 +
+ apps/profile/tests.py                              |   3 +
+ apps/profile/urls.py                               |   9 +
+ apps/profile/views.py                              |  26 ++
+ apps/register/__init__.py                          |   0
+ apps/register/admin.py                             |   3 +
+ apps/register/apps.py                              |   7 +
+ apps/register/migrations/__init__.py               |   0
+ apps/register/models.py                            |   4 +
+ apps/register/tests.py                             |   3 +
+ apps/register/urls.py                              |   9 +
+ apps/register/views.py                             |  59 ++++
+ apps/tickets/__init__.py                           |   0
+ apps/tickets/admin.py                              |   3 +
+ apps/tickets/apps.py                               |   7 +
+ apps/tickets/migrations/__init__.py                |   0
+ apps/tickets/models.py                             |   3 +
+ apps/tickets/tests.py                              | 163 +++++++++
+ apps/tickets/urls.py                               |  17 +
+ apps/tickets/views.py                              | 368 ++++++++++++++++++++
+ apps/user_settings/__init__.py                     |   0
+ apps/user_settings/admin.py                        |   5 +
+ apps/user_settings/apps.py                         |   7 +
+ apps/user_settings/migrations/0001_initial.py      |  24 ++
+ apps/user_settings/migrations/__init__.py          |   0
+ apps/user_settings/models.py                       |  17 +
+ apps/user_settings/tests.py                        |   3 +
+ apps/user_settings/urls.py                         |   9 +
+ apps/user_settings/views.py                        |  22 ++
+ config/__init__.py                                 |   0
+ config/asgi.py                                     |  10 +
+ config/settings.py                                 | 147 ++++++++
+ config/urls.py                                     |  25 ++
+ config/wsgi.py                                     |  10 +
+ manage.py                                          |  22 ++
+ nuke_and_rebuild.py                                |  44 +++
+ requirements.txt                                   |   9 +
+ reset_migrations.py                                |  30 ++
+ static/css/common/base.css                         | 291 ++++++++++++++++
+ static/css/home/home.css                           | 140 ++++++++
+ static/css/login/login.css                         |  85 +++++
+ static/css/profile/profile.css                     |  58 ++++
+ static/css/register/register.css                   | 104 ++++++
+ static/css/tickets/tickets.css                     | 378 +++++++++++++++++++++
+ static/css/user_settings/settings.css              |  79 +++++
+ static/images/home/.gitkeep                        |   0
+ static/images/login/.gitkeep                       |   0
+ static/images/profile/.gitkeep                     |   0
+ static/images/register/.gitkeep                    |   0
+ static/images/user_settings/.gitkeep               |   0
+ static/js/home/home.js                             |   2 +
+ static/js/login/login.js                           |   9 +
+ static/js/profile/profile.js                       |  17 +
+ static/js/register/register.js                     |   9 +
+ static/js/user_settings/settings.js                |   2 +
+ templates/base.html                                |  35 ++
+ templates/home/home.html                           |  93 +++++
+ templates/login/login.html                         |  73 ++++
+ templates/profile/profile.html                     |  61 ++++
+ templates/register/register.html                   | 115 +++++++
+ templates/tickets/notifications.html               |  66 ++++
+ templates/tickets/ticket_create.html               | 181 ++++++++++
+ templates/tickets/ticket_detail.html               | 233 +++++++++++++
+ templates/tickets/ticket_list.html                 |  88 +++++
+ templates/user_settings/settings.html              |  58 ++++
+ 91 files changed, 3843 insertions(+)

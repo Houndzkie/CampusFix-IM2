@@ -1,0 +1,120 @@
+﻿diff --git a/.env.example b/.env.example
+index e6c007b..40cf513 100644
+--- a/.env.example
++++ b/.env.example
+@@ -2,5 +2,7 @@
+ # By default, the project uses local SQLite for simpler classroom development.
+ # Set USE_SUPABASE_DB=true only when you intentionally want PostgreSQL.
+ # Dashboard -> Connect -> Session pooler (recommended for classroom/IPv4 networks).
++# For production, also set DEBUG=false, ALLOWED_HOSTS, and a private SECRET_KEY.
+ USE_SUPABASE_DB=false
++SQLITE_DATABASE_PATH=campusfix.sqlite3
+ DATABASE_URL=postgresql://postgres.[PROJECT-REF]:YOUR_PASSWORD@[POOLER-HOST]:5432/postgres
+diff --git a/.gitignore b/.gitignore
+index 5cda69c..11a52f1 100644
+--- a/.gitignore
++++ b/.gitignore
+@@ -5,5 +5,5 @@ venv2/
+ __pycache__/
+ *.pyc
+ *.zip
+-db.sqlite3
++*.sqlite3
+ media/
+diff --git a/apps/register/tests.py b/apps/register/tests.py
+index 7ce503c..2ecfd08 100644
+--- a/apps/register/tests.py
++++ b/apps/register/tests.py
+@@ -1,3 +1,26 @@
++from django.contrib.auth import get_user_model
+ from django.test import TestCase
++from django.urls import reverse
+ 
+-# Create your tests here.
++
++class RegistrationLoginFlowTests(TestCase):
++    def test_registered_user_can_log_in(self):
++        response = self.client.post(reverse("register:register"), {
++            "full_name": "CampusFix Test Student",
++            "school_id": "flow-student-1",
++            "email": "flow.student@example.edu",
++            "role": "student",
++            "password": "test-password-2026",
++            "confirm_password": "test-password-2026",
++        })
++
++        self.assertRedirects(response, reverse("login:login"))
++        user = get_user_model().objects.get(school_id="flow-student-1")
++
++        response = self.client.post(reverse("login:login"), {
++            "school_id": user.school_id,
++            "password": "test-password-2026",
++        })
++
++        self.assertRedirects(response, reverse("home:home"))
++        self.assertEqual(str(user.pk), self.client.session["_auth_user_id"])
+diff --git a/config/settings.py b/config/settings.py
+index 91c5a07..3d3f893 100644
+--- a/config/settings.py
++++ b/config/settings.py
+@@ -6,10 +6,12 @@ for vertical slicing + Supabase PostgreSQL (CSIT327 activity).
+ """
+ 
+ import os
++import secrets
+ from pathlib import Path
+ 
+ from dotenv import load_dotenv
+ import dj_database_url
++from django.core.exceptions import ImproperlyConfigured
+ 
+ # Build paths inside the project like this: BASE_DIR / 'subdir'.
+ BASE_DIR = Path(__file__).resolve().parent.parent
+@@ -17,13 +19,22 @@ BASE_DIR = Path(__file__).resolve().parent.parent
+ # Load environment variables from a local .env file (never commit .env).
+ load_dotenv(BASE_DIR / ".env")
+ 
+-# SECURITY WARNING: keep the secret key used in production secret!
+-SECRET_KEY = 'django-insecure-2ga@ys+e9g*8(qwz2rb6z%54e8ggjmptpsq#x@64d(tu6-m(!t'
+-
+ # SECURITY WARNING: don't run with debug turned on in production!
+-DEBUG = True
+-
+-ALLOWED_HOSTS = ['*']
++DEBUG = os.environ.get("DEBUG", "true").strip().lower() in {"1", "true", "yes", "on"}
++
++# Keep production secrets out of source control. Local development gets an
++# ephemeral key; production must explicitly provide SECRET_KEY.
++SECRET_KEY = os.environ.get("SECRET_KEY", "").strip()
++if not SECRET_KEY:
++    if not DEBUG:
++        raise ImproperlyConfigured("Set SECRET_KEY when DEBUG is disabled.")
++    SECRET_KEY = secrets.token_urlsafe(50)
++
++ALLOWED_HOSTS = [
++    host.strip()
++    for host in os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1,[::1]").split(",")
++    if host.strip()
++]
+ 
+ 
+ # Application definition
+@@ -91,6 +102,9 @@ USE_SUPABASE_DB = os.environ.get("USE_SUPABASE_DB", "").strip().lower() in {
+     "1", "true", "yes", "on", "y"
+ }
+ DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
++SQLITE_DATABASE_PATH = Path(
++    os.environ.get("SQLITE_DATABASE_PATH", BASE_DIR / "campusfix.sqlite3")
++)
+ 
+ if USE_SUPABASE_DB and DATABASE_URL:
+     DATABASES = {
+@@ -104,7 +118,7 @@ else:
+     DATABASES = {
+         'default': {
+             'ENGINE': 'django.db.backends.sqlite3',
+-            'NAME': BASE_DIR / 'db.sqlite3',
++            'NAME': SQLITE_DATABASE_PATH,
+         }
+     }
+ 

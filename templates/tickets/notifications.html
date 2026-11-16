@@ -15,7 +15,7 @@
 {% block content %}
 <div class="tickets-page" style="max-width:780px;">
   <div class="page-header">
-    <h1 class="page-title">🔔 Notifications <span style="font-size:1rem;font-weight:500;color:#888;">({{ unread_count }} unread)</span></h1>
+    <h1 class="page-title">🔔 Notifications <span style="font-size:1rem;font-weight:500;color:var(--color-text-muted);">({{ unread_count }} unread)</span></h1>
     {% if unread_count %}
     <form method="post" action="{% url 'tickets:mark_all_read' %}" id="formMarkAllRead">
       {% csrf_token %}

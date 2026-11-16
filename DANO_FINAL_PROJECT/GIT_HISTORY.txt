@@ -1,0 +1,3 @@
+﻿13d7e27 | Houndzkie | 2026-11-16 16:58:50 +0800 | Use a fresh SQLite database for CampusFix auth
+524d25b | Houndzkie | 2026-11-16 16:46:31 +0800 | Secure Django settings for public publishing
+560ec4e | Houndzkie | 2026-11-16 16:23:57 +0800 | Finalize CampusFix local SQLite configuration and ticket workflow
