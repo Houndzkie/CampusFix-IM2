@@ -102,6 +102,9 @@ USE_SUPABASE_DB = os.environ.get("USE_SUPABASE_DB", "").strip().lower() in {
     "1", "true", "yes", "on", "y"
 }
 DATABASE_URL = os.environ.get("DATABASE_URL", "").strip()
+SQLITE_DATABASE_PATH = Path(
+    os.environ.get("SQLITE_DATABASE_PATH", BASE_DIR / "campusfix.sqlite3")
+)
 
 if USE_SUPABASE_DB and DATABASE_URL:
     DATABASES = {
@@ -115,7 +118,7 @@ else:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.sqlite3',
-            'NAME': BASE_DIR / 'db.sqlite3',
+            'NAME': SQLITE_DATABASE_PATH,
         }
     }
 
