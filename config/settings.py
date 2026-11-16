@@ -6,10 +6,12 @@ for vertical slicing + Supabase PostgreSQL (CSIT327 activity).
 """
 
 import os
+import secrets
 from pathlib import Path
 
 from dotenv import load_dotenv
 import dj_database_url
+from django.core.exceptions import ImproperlyConfigured
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -17,13 +19,22 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 # Load environment variables from a local .env file (never commit .env).
 load_dotenv(BASE_DIR / ".env")
 
-# SECURITY WARNING: keep the secret key used in production secret!
-SECRET_KEY = 'django-insecure-2ga@ys+e9g*8(qwz2rb6z%54e8ggjmptpsq#x@64d(tu6-m(!t'
-
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.environ.get("DEBUG", "true").strip().lower() in {"1", "true", "yes", "on"}
 
-ALLOWED_HOSTS = ['*']
+# Keep production secrets out of source control. Local development gets an
+# ephemeral key; production must explicitly provide SECRET_KEY.
+SECRET_KEY = os.environ.get("SECRET_KEY", "").strip()
+if not SECRET_KEY:
+    if not DEBUG:
+        raise ImproperlyConfigured("Set SECRET_KEY when DEBUG is disabled.")
+    SECRET_KEY = secrets.token_urlsafe(50)
+
+ALLOWED_HOSTS = [
+    host.strip()
+    for host in os.environ.get("ALLOWED_HOSTS", "localhost,127.0.0.1,[::1]").split(",")
+    if host.strip()
+]
 
 
 # Application definition
