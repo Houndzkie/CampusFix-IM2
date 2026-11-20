@@ -52,6 +52,23 @@ class TicketWorkflowTests(TestCase):
 		)
 		self.category = Category.objects.create(category_name="Electrical")
 
+	def test_primary_navigation_is_available_from_profile(self):
+		self.client.force_login(self.reporter)
+
+		response = self.client.get(reverse("profile:profile"))
+
+		self.assertEqual(response.status_code, 200)
+		for route_name in (
+			"home:home",
+			"tickets:ticket_list",
+			"tickets:ticket_create",
+			"tickets:notifications",
+			"profile:profile",
+			"user_settings:settings",
+		):
+			self.assertContains(response, f'href="{reverse(route_name)}"')
+		self.assertContains(response, 'aria-current="page"')
+
 	def test_create_rejects_room_from_another_building(self):
 		self.client.force_login(self.reporter)
 

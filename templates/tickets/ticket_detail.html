@@ -9,12 +9,6 @@
 
 {% block nav_actions %}
 <a href="{% url 'tickets:ticket_list' %}">← All Tickets</a>
-<div class="nav-notif-wrap">
-  <a href="{% url 'tickets:notifications' %}" class="btn btn-secondary btn-sm">
-    🔔{% if unread_count %}<span class="notif-badge">{{ unread_count }}</span>{% endif %}
-  </a>
-</div>
-<a href="{% url 'login:logout' %}" id="buttonLogout">Logout</a>
 {% endblock %}
 
 {% block content %}
