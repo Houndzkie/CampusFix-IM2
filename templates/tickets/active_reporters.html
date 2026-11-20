@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Active Reporters – CampusFix{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/tickets/tickets.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="tickets-page">
+  <div class="page-header">
+    <div>
+      <h1 class="page-title">📊 Users with Active Requests</h1>
+      <p class="report-description">
+        This report uses active repair requests to find the users who reported them.
+      </p>
+    </div>
+  </div>
+
+  {% if reporters %}
+  <div class="tickets-table-wrap">
+    <table class="tickets-table" id="tableActiveReporters">
+      <thead>
+        <tr>
+          <th>Campus ID</th>
+          <th>Reporter</th>
+          <th>Role</th>
+          <th>Active Requests</th>
+        </tr>
+      </thead>
+      <tbody>
+        {% for reporter in reporters %}
+        <tr>
+          <td>{{ reporter.school_id }}</td>
+          <td>{{ reporter.full_name }}</td>
+          <td>{{ reporter.role|title }}</td>
+          <td>{{ reporter.active_ticket_count }}</td>
+        </tr>
+        {% endfor %}
+      </tbody>
+    </table>
+  </div>
+  {% else %}
+  <div class="empty-state" id="emptyActiveReporters">
+    <div class="empty-icon">📋</div>
+    <h3>No Active Reporters</h3>
+    <p>There are no users with open, in-progress, or on-hold repair requests.</p>
+  </div>
+  {% endif %}
+</div>
+{% endblock %}

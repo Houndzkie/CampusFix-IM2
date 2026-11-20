@@ -10,6 +10,7 @@ from apps.home.models import (
 	Room,
 	User,
 )
+from apps.tickets.views import active_reporters_queryset
 
 
 class TicketWorkflowTests(TestCase):
@@ -34,6 +35,7 @@ class TicketWorkflowTests(TestCase):
 			full_name="Test Staff",
 			password="test-password",
 			role="staff",
+			is_staff=True,
 		)
 		self.building = Building.objects.create(
 			building_code="ENG",
@@ -68,6 +70,48 @@ class TicketWorkflowTests(TestCase):
 		):
 			self.assertContains(response, f'href="{reverse(route_name)}"')
 		self.assertContains(response, 'aria-current="page"')
+		self.assertNotContains(response, f'href="{reverse("tickets:active_reporters")}"')
+
+	def test_active_reporters_report_uses_subquery_and_shows_matching_users(self):
+		for title, status in (
+			("Open issue", "open"),
+			("In progress issue", "in_progress"),
+		):
+			RepairRequest.objects.create(
+				reporter=self.reporter,
+				category=self.category,
+				room=self.room,
+				title=title,
+				description="Issue details",
+				priority="medium",
+				status=status,
+			)
+		RepairRequest.objects.create(
+			reporter=self.other_reporter,
+			category=self.category,
+			room=self.room,
+			title="Closed issue",
+			description="Issue details",
+			priority="medium",
+			status="closed",
+		)
+
+		self.assertIn("IN (SELECT", str(active_reporters_queryset().query).upper())
+		self.client.force_login(self.staff)
+		response = self.client.get(reverse("tickets:active_reporters"))
+
+		self.assertEqual(response.status_code, 200)
+		self.assertContains(response, f"<td>{self.reporter.school_id}</td>", html=True)
+		self.assertContains(response, "<td>2</td>", html=True)
+		self.assertNotContains(response, self.other_reporter.school_id)
+		self.assertContains(response, "Reports")
+
+	def test_reporter_cannot_access_active_reporters_report(self):
+		self.client.force_login(self.reporter)
+
+		response = self.client.get(reverse("tickets:active_reporters"))
+
+		self.assertRedirects(response, reverse("tickets:ticket_list"))
 
 	def test_create_rejects_room_from_another_building(self):
 		self.client.force_login(self.reporter)
@@ -136,6 +180,8 @@ class TicketWorkflowTests(TestCase):
 
 		self.assertEqual(response.status_code, 200)
 		self.assertContains(response, "In Progress")
+		self.assertContains(response, self.category.category_name)
+		self.assertContains(response, f"{self.building.building_name} / {self.room.room_name}")
 
 	def test_reporter_comment_notifies_staff_when_ticket_is_unassigned(self):
 		ticket = RepairRequest.objects.create(

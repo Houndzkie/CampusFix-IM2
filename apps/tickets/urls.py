@@ -5,6 +5,7 @@ app_name = "tickets"
 
 urlpatterns = [
     path("", views.ticket_list_view, name="ticket_list"),
+    path("reports/active-reporters/", views.active_reporters_view, name="active_reporters"),
     path("create/", views.ticket_create_view, name="ticket_create"),
     path("<uuid:pk>/", views.ticket_detail_view, name="ticket_detail"),
     path("<uuid:pk>/comment/", views.post_comment_view, name="post_comment"),

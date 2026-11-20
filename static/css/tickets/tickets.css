@@ -28,6 +28,11 @@
   gap: .5rem;
 }
 
+.report-description {
+  margin-top: .35rem;
+  color: var(--color-text-muted);
+}
+
 /* ── Status badge ────────────────────────────────────────────────── */
 .badge-status {
   display: inline-block;

@@ -13,6 +13,7 @@ from pathlib import Path
 from django.contrib import messages
 from django.contrib.auth.decorators import login_required
 from django.core.files.storage import default_storage
+from django.db.models import Count, Q, Subquery
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404, redirect, render
 from django.utils import timezone
@@ -36,6 +37,7 @@ STATUS_CHOICES = ["open", "in_progress", "on_hold", "resolved", "closed"]
 MAX_PHOTO_COUNT = 5
 MAX_PHOTO_SIZE = 5 * 1024 * 1024
 PHOTO_FORMATS = {"JPEG": "jpg", "PNG": "png", "WEBP": "webp"}
+ACTIVE_REQUEST_STATUSES = ("open", "in_progress", "on_hold")
 
 
 # ─── Helper ─────────────────────────────────────────────────────────────────
@@ -69,6 +71,31 @@ def ticket_list_view(request):
     return render(request, "tickets/ticket_list.html", {
         "tickets": tickets,
         "unread_count": unread_count,
+    })
+
+
+def active_reporters_queryset():
+    active_reporter_ids = RepairRequest.objects.filter(
+        status__in=ACTIVE_REQUEST_STATUSES
+    ).values("reporter_id")
+    return User.objects.filter(
+        user_id__in=Subquery(active_reporter_ids)
+    ).annotate(
+        active_ticket_count=Count(
+            "reported_requests",
+            filter=Q(reported_requests__status__in=ACTIVE_REQUEST_STATUSES),
+        )
+    ).order_by("full_name", "school_id")
+
+
+@login_required(login_url="login:login")
+def active_reporters_view(request):
+    if not (request.user.is_staff or request.user.is_superuser):
+        messages.error(request, "You do not have permission to view reports.")
+        return redirect("tickets:ticket_list")
+
+    return render(request, "tickets/active_reporters.html", {
+        "reporters": active_reporters_queryset(),
     })
 
 
