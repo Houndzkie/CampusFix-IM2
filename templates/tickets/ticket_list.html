@@ -31,7 +31,6 @@
       <thead>
         <tr>
           <th>Title</th>
-          <th>Category</th>
           <th>Location</th>
           <th>Priority</th>
           <th>Status</th>
@@ -47,7 +46,6 @@
               {{ ticket.title }}
             </a>
           </td>
-          <td>{{ ticket.category.category_name }}</td>
           <td>{{ ticket.room.building.building_name }} / {{ ticket.room.room_name }}</td>
           <td><span class="badge-priority badge-{{ ticket.priority }}">{{ ticket.priority }}</span></td>
           <td>

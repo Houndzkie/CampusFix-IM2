@@ -46,18 +46,6 @@
 
       <div class="form-row" style="margin-top:.85rem;">
         <div class="form-group">
-          <label for="selectCategory">Category *</label>
-          <select id="selectCategory" name="category_id" required>
-            <option value="">— Select Category —</option>
-            {% for cat in categories %}
-              <option value="{{ cat.category_id }}"
-                {% if form_data.category_id == cat.category_id|stringformat:"s" %}selected{% endif %}>
-                {{ cat.category_name }}
-              </option>
-            {% endfor %}
-          </select>
-        </div>
-        <div class="form-group">
           <label for="selectPriority">Priority</label>
           <select id="selectPriority" name="priority">
             {% for p in priority_choices %}
@@ -79,7 +67,7 @@
             {% for b in buildings %}
               <option value="{{ b.building_id }}"
                 {% if form_data.building_id == b.building_id|stringformat:"s" %}selected{% endif %}>
-                {{ b.building_code }} – {{ b.building_name }}
+                {{ b.building_code }}
               </option>
             {% endfor %}
           </select>

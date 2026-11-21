@@ -2,7 +2,7 @@ from django.contrib import admin
 from django.contrib.auth.admin import UserAdmin as BaseUserAdmin
 
 from .models import (
-    Building, Category, Notification, RepairRequest,
+    Building, Notification, RepairRequest,
     RequestComment, RequestPhoto, Room, StatusHistory, User, UserProfile,
 )
 
@@ -43,15 +43,10 @@ class RoomAdmin(admin.ModelAdmin):
     list_filter = ("building",)
 
 
-@admin.register(Category)
-class CategoryAdmin(admin.ModelAdmin):
-    list_display = ("category_name", "is_active", "description")
-
-
 @admin.register(RepairRequest)
 class RepairRequestAdmin(admin.ModelAdmin):
-    list_display = ("title", "reporter", "category", "room", "priority", "status", "created_at")
-    list_filter = ("status", "priority", "category")
+    list_display = ("title", "reporter", "room", "priority", "status", "created_at")
+    list_filter = ("status", "priority", "room")
     search_fields = ("title", "description")
 
 

@@ -1,7 +1,7 @@
 """
 Tickets app views — covers the full ticket lifecycle:
   - Ticket list (reporter sees own; staff/admin sees all)
-  - Ticket create (with cascading building→room, category, multi-photo)
+  - Ticket create (with cascading building→room and multi-photo)
   - Ticket detail (comments, status history timeline)
   - Post comment
   - Update status (admin/staff only) → auto StatusHistory + Notification
@@ -22,7 +22,6 @@ from PIL import Image, UnidentifiedImageError
 
 from apps.home.models import (
     Building,
-    Category,
     Notification,
     RepairRequest,
     RequestComment,
@@ -59,11 +58,11 @@ def ticket_list_view(request):
     user = request.user
     if user.role in ("admin", "staff"):
         tickets = RepairRequest.objects.select_related(
-            "reporter", "assigned_staff", "category", "room__building"
+            "reporter", "assigned_staff", "room__building"
         ).order_by("-created_at")
     else:
         tickets = RepairRequest.objects.filter(reporter=user).select_related(
-            "category", "room__building"
+            "room__building"
         ).order_by("-created_at")
 
     unread_count = Notification.objects.filter(user=user, is_read=False).count()
@@ -104,13 +103,11 @@ def active_reporters_view(request):
 @login_required(login_url="login:login")
 def ticket_create_view(request):
     buildings = Building.objects.order_by("building_name")
-    categories = Category.objects.filter(is_active=True).order_by("category_name")
 
     if request.method == "POST":
         title = request.POST.get("title", "").strip()
         description = request.POST.get("description", "").strip()
         priority = request.POST.get("priority", "medium")
-        category_id = request.POST.get("category_id")
         building_id = request.POST.get("building_id")
         room_id = request.POST.get("room_id")
         photos = request.FILES.getlist("photos")
@@ -120,8 +117,6 @@ def ticket_create_view(request):
             errors.append("Title is required.")
         if not description:
             errors.append("Description is required.")
-        if not category_id:
-            errors.append("Please select a category.")
         if not building_id or not room_id:
             errors.append("Please select a building and room.")
         if priority not in PRIORITY_CHOICES:
@@ -144,13 +139,7 @@ def ticket_create_view(request):
                 errors.append("One or more uploaded files are not valid images.")
                 break
 
-        category = None
         room = None
-        if category_id:
-            try:
-                category = Category.objects.get(pk=category_id, is_active=True)
-            except (Category.DoesNotExist, ValueError):
-                errors.append("Invalid or inactive category.")
         if building_id and room_id:
             try:
                 room = Room.objects.get(pk=room_id, building_id=building_id)
@@ -164,14 +153,12 @@ def ticket_create_view(request):
                 messages.error(request, e)
             return render(request, "tickets/ticket_create.html", {
                 "buildings": buildings,
-                "categories": categories,
                 "priority_choices": PRIORITY_CHOICES,
                 "form_data": request.POST,
             })
 
         ticket = RepairRequest.objects.create(
             reporter=request.user,
-            category=category,
             room=room,
             title=title,
             description=description,
@@ -208,7 +195,6 @@ def ticket_create_view(request):
 
     return render(request, "tickets/ticket_create.html", {
         "buildings": buildings,
-        "categories": categories,
         "priority_choices": PRIORITY_CHOICES,
         "form_data": {},
     })
@@ -220,7 +206,7 @@ def ticket_create_view(request):
 def ticket_detail_view(request, pk):
     ticket = get_object_or_404(
         RepairRequest.objects.select_related(
-            "reporter", "assigned_staff", "category", "room__building"
+            "reporter", "assigned_staff", "room__building"
         ),
         pk=pk,
     )

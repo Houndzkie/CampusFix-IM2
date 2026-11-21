@@ -77,23 +77,10 @@ class Room(models.Model):
     def __str__(self):
         return f"{self.room_name} - {self.building.building_name}"
 
-class Category(models.Model):
-    category_id = models.AutoField(primary_key=True)
-    category_name = models.CharField(max_length=50, unique=True)
-    description = models.CharField(max_length=150, null=True, blank=True)
-    is_active = models.BooleanField(default=True)
-
-    class Meta:
-        db_table = 'category'
-
-    def __str__(self):
-        return self.category_name
-
 class RepairRequest(models.Model):
     request_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     reporter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reported_requests')
     assigned_staff = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_requests')
-    category = models.ForeignKey(Category, on_delete=models.RESTRICT, related_name='requests')
     room = models.ForeignKey(Room, on_delete=models.RESTRICT, related_name='requests')
     title = models.CharField(max_length=100)
     description = models.TextField()

@@ -3,7 +3,6 @@ from django.urls import reverse
 
 from apps.home.models import (
 	Building,
-	Category,
 	Notification,
 	RepairRequest,
 	RequestComment,
@@ -52,8 +51,6 @@ class TicketWorkflowTests(TestCase):
 			room_name="101",
 			floor_number=1,
 		)
-		self.category = Category.objects.create(category_name="Electrical")
-
 	def test_primary_navigation_is_available_from_profile(self):
 		self.client.force_login(self.reporter)
 
@@ -79,7 +76,6 @@ class TicketWorkflowTests(TestCase):
 		):
 			RepairRequest.objects.create(
 				reporter=self.reporter,
-				category=self.category,
 				room=self.room,
 				title=title,
 				description="Issue details",
@@ -88,7 +84,6 @@ class TicketWorkflowTests(TestCase):
 			)
 		RepairRequest.objects.create(
 			reporter=self.other_reporter,
-			category=self.category,
 			room=self.room,
 			title="Closed issue",
 			description="Issue details",
@@ -120,7 +115,6 @@ class TicketWorkflowTests(TestCase):
 			"title": "Broken light",
 			"description": "The room light is out.",
 			"priority": "medium",
-			"category_id": self.category.pk,
 			"building_id": self.other_building.pk,
 			"room_id": self.room.pk,
 		})
@@ -136,7 +130,6 @@ class TicketWorkflowTests(TestCase):
 			"title": "Broken light",
 			"description": "The room light is out.",
 			"priority": "medium",
-			"category_id": self.category.pk,
 			"room_id": self.room.pk,
 		})
 
@@ -151,7 +144,6 @@ class TicketWorkflowTests(TestCase):
 			"title": "Broken light",
 			"description": "The room light is out.",
 			"priority": "medium",
-			"category_id": self.category.pk,
 			"building_id": self.building.pk,
 			"room_id": self.room.pk,
 		})
@@ -167,7 +159,6 @@ class TicketWorkflowTests(TestCase):
 	def test_ticket_list_renders_status_label(self):
 		RepairRequest.objects.create(
 			reporter=self.reporter,
-			category=self.category,
 			room=self.room,
 			title="Work in progress",
 			description="Issue details",
@@ -180,13 +171,12 @@ class TicketWorkflowTests(TestCase):
 
 		self.assertEqual(response.status_code, 200)
 		self.assertContains(response, "In Progress")
-		self.assertContains(response, self.category.category_name)
 		self.assertContains(response, f"{self.building.building_name} / {self.room.room_name}")
+		self.assertNotContains(response, "Category")
 
 	def test_reporter_comment_notifies_staff_when_ticket_is_unassigned(self):
 		ticket = RepairRequest.objects.create(
 			reporter=self.reporter,
-			category=self.category,
 			room=self.room,
 			title="Unassigned ticket",
 			description="Issue details",
@@ -207,7 +197,6 @@ class TicketWorkflowTests(TestCase):
 	def test_reporter_cannot_comment_on_another_users_ticket(self):
 		ticket = RepairRequest.objects.create(
 			reporter=self.other_reporter,
-			category=self.category,
 			room=self.room,
 			title="Private ticket",
 			description="Issue details",

@@ -50,10 +50,6 @@
             <span>{{ ticket.assigned_staff.full_name|default:"Unassigned" }}</span>
           </div>
           <div class="meta-item">
-            <span>Category</span>
-            <span>{{ ticket.category.category_name }}</span>
-          </div>
-          <div class="meta-item">
             <span>Location</span>
             <span>{{ ticket.room.building.building_name }} / {{ ticket.room.room_name }} (Floor {{ ticket.room.floor_number }})</span>
           </div>
