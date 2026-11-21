@@ -1,5 +1,8 @@
 from django.test import TestCase
 from django.urls import reverse
+from django.core.files.uploadedfile import SimpleUploadedFile
+from io import BytesIO
+from PIL import Image
 
 from apps.home.models import (
 	Building,
@@ -13,6 +16,11 @@ from apps.tickets.views import active_reporters_queryset
 
 
 class TicketWorkflowTests(TestCase):
+	def issue_photo(self, name="issue.jpg"):
+		stream = BytesIO()
+		Image.new("RGB", (20, 20), "white").save(stream, format="JPEG")
+		return SimpleUploadedFile(name, stream.getvalue(), content_type="image/jpeg")
+
 	def setUp(self):
 		self.reporter = User.objects.create_user(
 			school_id="student-1",
@@ -33,7 +41,7 @@ class TicketWorkflowTests(TestCase):
 			email="staff@example.edu",
 			full_name="Test Staff",
 			password="test-password",
-			role="staff",
+			role="maintenance_staff",
 			is_staff=True,
 		)
 		self.building = Building.objects.create(
@@ -71,7 +79,7 @@ class TicketWorkflowTests(TestCase):
 
 	def test_active_reporters_report_uses_subquery_and_shows_matching_users(self):
 		for title, status in (
-			("Open issue", "open"),
+			("Pending issue", "pending"),
 			("In progress issue", "in_progress"),
 		):
 			RepairRequest.objects.create(
@@ -88,7 +96,7 @@ class TicketWorkflowTests(TestCase):
 			title="Closed issue",
 			description="Issue details",
 			priority="medium",
-			status="closed",
+			status="finished",
 		)
 
 		self.assertIn("IN (SELECT", str(active_reporters_queryset().query).upper())
@@ -117,6 +125,7 @@ class TicketWorkflowTests(TestCase):
 			"priority": "medium",
 			"building_id": self.other_building.pk,
 			"room_id": self.room.pk,
+			"photos": [self.issue_photo()],
 		})
 
 		self.assertEqual(response.status_code, 200)
@@ -131,6 +140,7 @@ class TicketWorkflowTests(TestCase):
 			"description": "The room light is out.",
 			"priority": "medium",
 			"room_id": self.room.pk,
+			"photos": [self.issue_photo()],
 		})
 
 		self.assertEqual(response.status_code, 200)
@@ -146,6 +156,7 @@ class TicketWorkflowTests(TestCase):
 			"priority": "medium",
 			"building_id": self.building.pk,
 			"room_id": self.room.pk,
+			"photos": [self.issue_photo()],
 		})
 
 		ticket = RepairRequest.objects.get()
@@ -154,7 +165,8 @@ class TicketWorkflowTests(TestCase):
 			reverse("tickets:ticket_detail", kwargs={"pk": ticket.request_id}),
 		)
 		self.assertEqual(ticket.status_history.count(), 1)
-		self.assertEqual(ticket.status_history.get().new_status, "open")
+		self.assertEqual(ticket.status_history.get().new_status, "pending")
+		self.assertTrue(ticket.photos.filter(photo_type="issue").exists())
 
 	def test_ticket_list_renders_status_label(self):
 		RepairRequest.objects.create(
@@ -181,7 +193,7 @@ class TicketWorkflowTests(TestCase):
 			title="Unassigned ticket",
 			description="Issue details",
 			priority="medium",
-			status="open",
+			status="pending",
 		)
 		self.client.force_login(self.reporter)
 
@@ -201,7 +213,7 @@ class TicketWorkflowTests(TestCase):
 			title="Private ticket",
 			description="Issue details",
 			priority="medium",
-			status="open",
+			status="pending",
 		)
 		self.client.force_login(self.reporter)
 
@@ -213,3 +225,71 @@ class TicketWorkflowTests(TestCase):
 		self.assertEqual(response.status_code, 302)
 		self.assertEqual(response["Location"], reverse("tickets:ticket_list"))
 		self.assertEqual(RequestComment.objects.count(), 0)
+
+	def test_maintenance_staff_can_take_pending_ticket(self):
+		ticket = RepairRequest.objects.create(
+			reporter=self.reporter,
+			room=self.room,
+			title="Pending repair",
+			description="Issue details",
+			priority="medium",
+			status="pending",
+		)
+		self.client.force_login(self.staff)
+
+		response = self.client.post(
+			reverse("tickets:take_ticket", kwargs={"pk": ticket.request_id})
+		)
+
+		ticket.refresh_from_db()
+		self.assertRedirects(response, reverse("tickets:ticket_detail", kwargs={"pk": ticket.request_id}))
+		self.assertEqual(ticket.assigned_staff, self.staff)
+		self.assertEqual(ticket.status, "in_progress")
+
+	def test_finished_status_requires_proof_photo(self):
+		ticket = RepairRequest.objects.create(
+			reporter=self.reporter,
+			room=self.room,
+			title="Repair to finish",
+			description="Issue details",
+			priority="medium",
+			status="in_progress",
+			assigned_staff=self.staff,
+		)
+		self.client.force_login(self.staff)
+
+		response = self.client.post(
+			reverse("tickets:update_status", kwargs={"pk": ticket.request_id}),
+			{"new_status": "finished", "assigned_staff_id": str(self.staff.user_id)},
+			follow=True,
+		)
+
+		ticket.refresh_from_db()
+		self.assertEqual(ticket.status, "in_progress")
+		self.assertContains(response, "At least one proof photo is required")
+
+	def test_finished_status_accepts_up_to_five_proof_photos(self):
+		ticket = RepairRequest.objects.create(
+			reporter=self.reporter,
+			room=self.room,
+			title="Repair completed",
+			description="Issue details",
+			priority="medium",
+			status="in_progress",
+			assigned_staff=self.staff,
+		)
+		self.client.force_login(self.staff)
+
+		response = self.client.post(
+			reverse("tickets:update_status", kwargs={"pk": ticket.request_id}),
+			{
+				"new_status": "finished",
+				"assigned_staff_id": str(self.staff.user_id),
+				"proof_photos": [self.issue_photo("proof-1.jpg"), self.issue_photo("proof-2.jpg")],
+			},
+		)
+
+		ticket.refresh_from_db()
+		self.assertRedirects(response, reverse("tickets:ticket_detail", kwargs={"pk": ticket.request_id}))
+		self.assertEqual(ticket.status, "finished")
+		self.assertEqual(ticket.photos.filter(photo_type="proof").count(), 2)

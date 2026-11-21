@@ -4,12 +4,12 @@
 
 - Start CampusFix with the project `.env` configured for Supabase. Never show the `.env` contents, password, or other credentials in the recording.
 - Sign in with an authorized Django staff or superuser account. The Reports page is restricted to accounts with Django staff privileges.
-- At the time this script was prepared, Supabase had 3 ordinary users, no staff/superuser accounts, no seeded campus locations, and no repair requests. The query pages will be empty until the demo data is added.
+- Supabase should contain demo data for the JOIN and SUBQUERY pages. Maintenance Staff accounts should have staff privileges, and reporter submissions require at least one issue photo.
 - Prepare data in Supabase before recording:
   1. If there is no authorized admin account, run `python manage.py createsuperuser` from the project root. This project assigns the default `admin` role to a superuser.
   2. Confirm the migration seeded the RTL, NGE, GLE, and ACAD buildings and rooms 101–105, 201–205, 301–305, and 401–405.
   3. Register a reporter account and submit two repair requests through CampusFix.
-  4. As staff, leave one request open and move the other to in progress. Optionally create a separate closed request to show it is excluded from the report.
+  4. As Maintenance Staff, leave one request pending and move the other to in progress. Optionally create a finished request to show it is excluded from the active-reporters report.
 - Run `python manage.py showmigrations` and confirm migrations are applied. Do not use the reset scripts.
 - Use a browser window with a readable resolution and close unrelated windows.
 
@@ -55,7 +55,7 @@ print(tickets.query)
 **Show:** Return to CampusFix and open **Reports**. Point out the reporters and active-ticket counts.
 
 **Say:**
-“The Active Reporters report only lists users whose IDs appear in active repair requests. The inner query selects reporter IDs for open, in-progress, or on-hold requests. The outer query filters users using those IDs and counts each user’s active requests.”
+“The Active Reporters report only lists users whose IDs appear in active repair requests. The inner query selects reporter IDs for pending or in-progress requests. The outer query filters users by those IDs and counts each user’s active requests.”
 
 **Show the generated SUBQUERY SQL:** In the same Django shell, enter:
 

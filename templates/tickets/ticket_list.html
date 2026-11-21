@@ -50,7 +50,7 @@
           <td><span class="badge-priority badge-{{ ticket.priority }}">{{ ticket.priority }}</span></td>
           <td>
             <span class="badge-status badge-{{ ticket.status }}">
-              {% if ticket.status == "in_progress" %}In Progress{% elif ticket.status == "on_hold" %}On Hold{% else %}{{ ticket.status|title }}{% endif %}
+              {% if ticket.status == "in_progress" %}In Progress{% elif ticket.status == "finished" %}Finished{% else %}{{ ticket.status|title }}{% endif %}
             </span>
           </td>
           <td>{{ ticket.created_at|date:"M d, Y" }}</td>

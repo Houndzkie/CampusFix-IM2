@@ -32,11 +32,12 @@ from apps.home.models import (
 )
 
 PRIORITY_CHOICES = ["low", "medium", "high", "urgent"]
-STATUS_CHOICES = ["open", "in_progress", "on_hold", "resolved", "closed"]
+STATUS_CHOICES = ["pending", "in_progress", "finished"]
 MAX_PHOTO_COUNT = 5
 MAX_PHOTO_SIZE = 5 * 1024 * 1024
 PHOTO_FORMATS = {"JPEG": "jpg", "PNG": "png", "WEBP": "webp"}
-ACTIVE_REQUEST_STATUSES = ("open", "in_progress", "on_hold")
+ACTIVE_REQUEST_STATUSES = ("pending", "in_progress")
+MAINTENANCE_ROLES = ("admin", "maintenance_staff")
 
 
 # ─── Helper ─────────────────────────────────────────────────────────────────
@@ -56,7 +57,7 @@ def _notify(user, request_obj, message):
 def ticket_list_view(request):
     """Dashboard: reporters see their own tickets; staff/admin see all."""
     user = request.user
-    if user.role in ("admin", "staff"):
+    if user.role in ("admin", "maintenance_staff"):
         tickets = RepairRequest.objects.select_related(
             "reporter", "assigned_staff", "room__building"
         ).order_by("-created_at")
@@ -117,6 +118,8 @@ def ticket_create_view(request):
             errors.append("Title is required.")
         if not description:
             errors.append("Description is required.")
+        if not photos:
+            errors.append("At least one issue photo is required.")
         if not building_id or not room_id:
             errors.append("Please select a building and room.")
         if priority not in PRIORITY_CHOICES:
@@ -163,7 +166,7 @@ def ticket_create_view(request):
             title=title,
             description=description,
             priority=priority,
-            status="open",
+            status="pending",
         )
 
         # Save initial StatusHistory
@@ -171,7 +174,7 @@ def ticket_create_view(request):
             request=ticket,
             changed_by=request.user,
             old_status=None,
-            new_status="open",
+            new_status="pending",
             remarks="Ticket submitted.",
         )
 
@@ -187,7 +190,7 @@ def ticket_create_view(request):
             RequestPhoto.objects.create(
                 request=ticket,
                 photo_url=default_storage.url(saved_path),
-                photo_type=photo_type,
+                photo_type="issue",
             )
 
         messages.success(request, f"Ticket '{title}' submitted successfully!")
@@ -211,14 +214,16 @@ def ticket_detail_view(request, pk):
         pk=pk,
     )
     # Reporters can only see their own tickets
-    if request.user.role not in ("admin", "staff") and ticket.reporter != request.user:
+    if request.user.role not in MAINTENANCE_ROLES and ticket.reporter != request.user:
         messages.error(request, "You do not have permission to view this ticket.")
         return redirect("tickets:ticket_list")
 
     comments = ticket.comments.select_related("author").order_by("created_at")
     history = ticket.status_history.select_related("changed_by").order_by("changed_at")
     photos = ticket.photos.all()
-    staff_users = User.objects.filter(role__in=("admin", "staff")).order_by("full_name")
+    staff_users = User.objects.filter(role__in=MAINTENANCE_ROLES).order_by("full_name")
+    issue_photos = ticket.photos.filter(photo_type="issue")
+    proof_photos = ticket.photos.filter(photo_type="proof")
     unread_count = Notification.objects.filter(user=request.user, is_read=False).count()
 
     return render(request, "tickets/ticket_detail.html", {
@@ -226,6 +231,8 @@ def ticket_detail_view(request, pk):
         "comments": comments,
         "history": history,
         "photos": photos,
+        "issue_photos": issue_photos,
+        "proof_photos": proof_photos,
         "staff_users": staff_users,
         "status_choices": STATUS_CHOICES,
         "unread_count": unread_count,
@@ -238,7 +245,7 @@ def ticket_detail_view(request, pk):
 @require_POST
 def post_comment_view(request, pk):
     ticket = get_object_or_404(RepairRequest, pk=pk)
-    if request.user.role not in ("admin", "staff") and ticket.reporter != request.user:
+    if request.user.role not in MAINTENANCE_ROLES and ticket.reporter != request.user:
         messages.error(request, "You do not have permission to comment on this ticket.")
         return redirect("tickets:ticket_list")
 
@@ -259,7 +266,7 @@ def post_comment_view(request, pk):
     if ticket.assigned_staff and request.user != ticket.assigned_staff:
         recipients.add(ticket.assigned_staff)
     elif request.user == ticket.reporter:
-        recipients.update(User.objects.filter(role__in=("admin", "staff")))
+        recipients.update(User.objects.filter(role__in=MAINTENANCE_ROLES))
     for recipient in recipients:
         _notify(
             recipient,
@@ -276,7 +283,7 @@ def post_comment_view(request, pk):
 @login_required(login_url="login:login")
 @require_POST
 def update_status_view(request, pk):
-    if request.user.role not in ("admin", "staff"):
+    if request.user.role not in MAINTENANCE_ROLES:
         messages.error(request, "You do not have permission to update ticket status.")
         return redirect("tickets:ticket_detail", pk=pk)
 
@@ -284,27 +291,71 @@ def update_status_view(request, pk):
     new_status = request.POST.get("new_status", "").strip()
     remarks = request.POST.get("remarks", "").strip()
     assigned_staff_id = request.POST.get("assigned_staff_id", "").strip()
+    proof_photos = request.FILES.getlist("proof_photos")
 
     if new_status not in STATUS_CHOICES:
         messages.error(request, "Invalid status.")
         return redirect("tickets:ticket_detail", pk=pk)
+    if len(proof_photos) > MAX_PHOTO_COUNT:
+        messages.error(request, f"Upload no more than {MAX_PHOTO_COUNT} proof photos.")
+        return redirect("tickets:ticket_detail", pk=pk)
+    if new_status == "finished":
+        existing_proof_count = ticket.photos.filter(photo_type="proof").count()
+        if existing_proof_count + len(proof_photos) > MAX_PHOTO_COUNT:
+            messages.error(request, f"A ticket can have no more than {MAX_PHOTO_COUNT} proof photos.")
+            return redirect("tickets:ticket_detail", pk=pk)
+        if existing_proof_count == 0 and not proof_photos:
+            messages.error(request, "At least one proof photo is required to finish this ticket.")
+            return redirect("tickets:ticket_detail", pk=pk)
 
     old_status = ticket.status
+
+    validated_proofs = []
+    for photo_file in proof_photos:
+        try:
+            with Image.open(photo_file) as image:
+                image_format = image.format
+                image.verify()
+            if image_format not in PHOTO_FORMATS:
+                messages.error(request, "Proof photos must be JPG, PNG, or WEBP images.")
+                return redirect("tickets:ticket_detail", pk=pk)
+            if photo_file.size > MAX_PHOTO_SIZE:
+                messages.error(request, f"Each proof photo must be no larger than {MAX_PHOTO_SIZE // (1024 * 1024)} MB.")
+                return redirect("tickets:ticket_detail", pk=pk)
+            photo_file.seek(0)
+            validated_proofs.append(photo_file)
+        except (UnidentifiedImageError, OSError):
+            messages.error(request, "One or more proof photos are not valid images.")
+            return redirect("tickets:ticket_detail", pk=pk)
 
     # Assign staff if provided
     if assigned_staff_id:
         try:
-            staff = User.objects.get(pk=assigned_staff_id, role__in=("admin", "staff"))
+            staff = User.objects.get(pk=assigned_staff_id, role__in=MAINTENANCE_ROLES)
             ticket.assigned_staff = staff
         except User.DoesNotExist:
             pass
 
     ticket.status = new_status
-    if new_status in ("resolved", "closed"):
+    if new_status == "finished":
         ticket.completed_at = timezone.now()
     else:
         ticket.completed_at = None
     ticket.save()
+
+    for photo_file in validated_proofs:
+        with Image.open(photo_file) as image:
+            photo_type = PHOTO_FORMATS[image.format]
+        photo_file.seek(0)
+        saved_path = default_storage.save(
+            f"proof_photos/{ticket.request_id}/{Path(photo_file.name).name}",
+            photo_file,
+        )
+        RequestPhoto.objects.create(
+            request=ticket,
+            photo_url=default_storage.url(saved_path),
+            photo_type="proof",
+        )
 
     # Audit trail
     StatusHistory.objects.create(
@@ -323,6 +374,39 @@ def update_status_view(request, pk):
     )
 
     messages.success(request, f"Ticket status updated to '{new_status}'.")
+    return redirect("tickets:ticket_detail", pk=pk)
+
+
+@login_required(login_url="login:login")
+@require_POST
+def take_ticket_view(request, pk):
+    if request.user.role not in MAINTENANCE_ROLES:
+        messages.error(request, "You do not have permission to take this ticket.")
+        return redirect("tickets:ticket_detail", pk=pk)
+
+    ticket = get_object_or_404(RepairRequest, pk=pk)
+    if ticket.assigned_staff and ticket.assigned_staff != request.user:
+        messages.error(request, "This ticket is already assigned to another maintenance staff.")
+        return redirect("tickets:ticket_detail", pk=pk)
+
+    old_status = ticket.status
+    ticket.assigned_staff = request.user
+    ticket.status = "in_progress"
+    ticket.completed_at = None
+    ticket.save()
+    StatusHistory.objects.create(
+        request=ticket,
+        changed_by=request.user,
+        old_status=old_status,
+        new_status="in_progress",
+        remarks="Ticket taken by maintenance staff.",
+    )
+    _notify(
+        ticket.reporter,
+        ticket,
+        f"Your ticket '{ticket.title}' is now being handled by {request.user.full_name}.",
+    )
+    messages.success(request, "You have taken this ticket and it is now in progress.")
     return redirect("tickets:ticket_detail", pk=pk)
 
 

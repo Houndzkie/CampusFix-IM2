@@ -4,6 +4,21 @@ from django.urls import reverse
 
 
 class RegistrationLoginFlowTests(TestCase):
+    def test_maintenance_staff_registration_receives_staff_permissions(self):
+        response = self.client.post(reverse("register:register"), {
+            "full_name": "Campus Maintenance Worker",
+            "school_id": "maintenance-1",
+            "email": "maintenance@example.edu",
+            "role": "maintenance_staff",
+            "password": "test-password-2026",
+            "confirm_password": "test-password-2026",
+        })
+
+        self.assertRedirects(response, reverse("login:login"))
+        user = get_user_model().objects.get(school_id="maintenance-1")
+        self.assertTrue(user.is_staff)
+        self.assertEqual(user.role, "maintenance_staff")
+
     def test_registered_user_can_log_in(self):
         response = self.client.post(reverse("register:register"), {
             "full_name": "CampusFix Test Student",

@@ -43,11 +43,9 @@
   text-transform: uppercase;
   letter-spacing: .04em;
 }
-.badge-open        { background: #e8f0fe; color: #174ea6; }
+.badge-pending     { background: #e8f0fe; color: #174ea6; }
 .badge-in_progress { background: #fff8e1; color: #8a4b08; }
-.badge-on_hold     { background: #fce4ec; color: #a50e3d; }
-.badge-resolved    { background: #e8f5e9; color: #2e7d32; }
-.badge-closed      { background: #f1f3f4; color: #5f6368; }
+.badge-finished    { background: #e8f5e9; color: #2e7d32; }
 
 .badge-priority {
   display: inline-block;

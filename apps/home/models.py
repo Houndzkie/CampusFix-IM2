@@ -21,11 +21,17 @@ class UserManager(BaseUserManager):
         return self.create_user(school_id, email, full_name, password, **extra_fields)
 
 class User(AbstractBaseUser, PermissionsMixin):
+    ROLE_CHOICES = (
+        ("student", "Student"),
+        ("faculty", "Faculty"),
+        ("maintenance_staff", "Maintenance Staff"),
+        ("admin", "Administrator"),
+    )
     user_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     school_id = models.CharField(max_length=20, unique=True)
     full_name = models.CharField(max_length=100)
     email = models.EmailField(max_length=254, unique=True)
-    role = models.CharField(max_length=20)
+    role = models.CharField(max_length=20, choices=ROLE_CHOICES)
     is_active = models.BooleanField(default=True)
     is_staff = models.BooleanField(default=False)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -78,6 +84,11 @@ class Room(models.Model):
         return f"{self.room_name} - {self.building.building_name}"
 
 class RepairRequest(models.Model):
+    STATUS_CHOICES = (
+        ("pending", "Pending"),
+        ("in_progress", "In Progress"),
+        ("finished", "Finished"),
+    )
     request_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     reporter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reported_requests')
     assigned_staff = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_requests')
@@ -85,7 +96,7 @@ class RepairRequest(models.Model):
     title = models.CharField(max_length=100)
     description = models.TextField()
     priority = models.CharField(max_length=10)
-    status = models.CharField(max_length=15)
+    status = models.CharField(max_length=15, choices=STATUS_CHOICES)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
     completed_at = models.DateTimeField(null=True, blank=True)

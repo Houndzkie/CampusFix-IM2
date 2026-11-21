@@ -27,6 +27,8 @@ def register_view(request):
 
         if not full_name or not school_id or not email or not password or not confirm_password:
             error_message = "All fields are required to register."
+        elif role not in ("student", "faculty", "maintenance_staff"):
+            error_message = "Please select a valid role."
         elif password != confirm_password:
             error_message = "Passwords do not match. Please re-enter."
         elif len(password) < 6:
@@ -42,6 +44,7 @@ def register_view(request):
                 full_name=full_name,
                 password=password,
                 role=role,
+                is_staff=(role == "maintenance_staff"),
             )
             # Auto-create a UserProfile for the new user
             from apps.home.models import UserProfile

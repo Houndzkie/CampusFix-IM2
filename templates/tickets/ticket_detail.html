@@ -75,14 +75,26 @@
       </div>
 
       <!-- Photos -->
-      {% if photos %}
+      {% if issue_photos %}
       <div class="detail-card" id="cardTicketPhotos">
-        <h2>📷 Attached Photos</h2>
+        <h2>📷 Issue Photos</h2>
         <div class="photo-grid">
-          {% for photo in photos %}
+          {% for photo in issue_photos %}
           <img src="{{ photo.photo_url }}" alt="Photo {{ forloop.counter }}"
                onclick="window.open('{{ photo.photo_url }}','_blank')"
                id="imgPhoto{{ forloop.counter }}">
+          {% endfor %}
+        </div>
+      </div>
+      {% endif %}
+
+      {% if proof_photos %}
+      <div class="detail-card" id="cardProofPhotos">
+        <h2>✅ Completion Proof Photos</h2>
+        <div class="photo-grid">
+          {% for photo in proof_photos %}
+          <img src="{{ photo.photo_url }}" alt="Completion proof {{ forloop.counter }}"
+               onclick="window.open('{{ photo.photo_url }}','_blank')">
           {% endfor %}
         </div>
       </div>
@@ -105,7 +117,7 @@
                 <span class="badge-status badge-{{ h.old_status }}" style="font-size:.65rem;">{{ h.old_status }}</span>
                 → <span class="badge-status badge-{{ h.new_status }}" style="font-size:.65rem;">{{ h.new_status }}</span>
               {% else %}
-                Ticket opened as <span class="badge-status badge-{{ h.new_status }}" style="font-size:.65rem;">{{ h.new_status }}</span>
+                Ticket submitted as <span class="badge-status badge-{{ h.new_status }}" style="font-size:.65rem;">{{ h.new_status }}</span>
               {% endif %}
               {% if h.remarks %}
               <p style="margin:.5rem 0 0;font-size:.83rem;color:var(--color-text-muted);">{{ h.remarks }}</p>
@@ -156,11 +168,20 @@
     <!-- ── RIGHT COLUMN (sidebar) ─────────────────────────────── -->
     <div>
 
-      <!-- Status Update (admin/staff only) -->
-      {% if request.user.role in "admin staff" %}
+      <!-- Status Update (maintenance staff/admin only) -->
+      {% if request.user.role in "admin maintenance_staff" %}
       <div class="sidebar-panel" id="panelStatusUpdate">
         <h3>⚙️ Update Status</h3>
-        <form method="post" action="{% url 'tickets:update_status' ticket.request_id %}" id="formUpdateStatus">
+        {% if not ticket.assigned_staff or ticket.assigned_staff.user_id == request.user.user_id %}
+        {% if not ticket.assigned_staff %}
+        <form method="post" action="{% url 'tickets:take_ticket' ticket.request_id %}" id="formTakeTicket" style="margin-bottom:.75rem;">
+          {% csrf_token %}
+          <button type="submit" class="btn btn-primary" style="width:100%;" id="btnTakeTicket">
+            Take Request
+          </button>
+        </form>
+        {% endif %}
+        <form method="post" enctype="multipart/form-data" action="{% url 'tickets:update_status' ticket.request_id %}" id="formUpdateStatus">
           {% csrf_token %}
 
           <div class="form-group">
@@ -191,10 +212,21 @@
                       placeholder="Optional notes about this update…"></textarea>
           </div>
 
+          {% if ticket.status != "finished" %}
+          <div class="form-group" style="margin-top:.75rem;">
+            <label for="inputProofPhotos">Completion Proof Photos</label>
+            <input type="file" id="inputProofPhotos" name="proof_photos" accept="image/*" multiple>
+            <small style="color:var(--color-text-muted);">Required to finish the ticket. Upload up to 5 JPG, PNG, or WEBP images.</small>
+          </div>
+          {% endif %}
+
           <button type="submit" class="btn btn-primary" style="width:100%;margin-top:1rem;" id="btnUpdateStatus">
             Save Update
           </button>
         </form>
+        {% else %}
+        <p style="color:var(--color-text-muted);font-size:.88rem;">This request is assigned to another maintenance staff member.</p>
+        {% endif %}
       </div>
       {% endif %}
 

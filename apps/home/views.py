@@ -9,16 +9,16 @@ def home_view(request):
     """Home feature: the main authenticated landing screen with quick stats."""
     user = request.user
 
-    if user.role in ("admin", "staff"):
+    if user.role in ("admin", "maintenance_staff"):
         total_tickets = RepairRequest.objects.count()
-        open_tickets = RepairRequest.objects.filter(status="open").count()
+        open_tickets = RepairRequest.objects.filter(status="pending").count()
         in_progress = RepairRequest.objects.filter(status="in_progress").count()
-        resolved = RepairRequest.objects.filter(status="resolved").count()
+        resolved = RepairRequest.objects.filter(status="finished").count()
     else:
         total_tickets = RepairRequest.objects.filter(reporter=user).count()
-        open_tickets = RepairRequest.objects.filter(reporter=user, status="open").count()
+        open_tickets = RepairRequest.objects.filter(reporter=user, status="pending").count()
         in_progress = RepairRequest.objects.filter(reporter=user, status="in_progress").count()
-        resolved = RepairRequest.objects.filter(reporter=user, status="resolved").count()
+        resolved = RepairRequest.objects.filter(reporter=user, status="finished").count()
 
     unread_count = Notification.objects.filter(user=user, is_read=False).count()
 

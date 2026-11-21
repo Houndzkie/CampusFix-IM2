@@ -68,11 +68,32 @@
 
             <div class="form-group">
                 <label id="textviewRoleLabel" for="selectRole">Role</label>
-                <select id="selectRole" name="role">
-                    <option value="student" {% if form_data.role == 'student' or not form_data.role %}selected{% endif %}>Student</option>
-                    <option value="faculty" {% if form_data.role == 'faculty' %}selected{% endif %}>Faculty</option>
-                    <option value="staff" {% if form_data.role == 'staff' %}selected{% endif %}>Staff</option>
-                </select>
+                <div class="role-selector" id="selectRole">
+                    <label class="role-option">
+                        <input type="radio" name="role" value="student" {% if form_data.role == 'student' or not form_data.role %}checked{% endif %}>
+                        <span class="role-option-icon">🎓</span>
+                        <span>
+                            <strong>Student</strong>
+                            <small>Submit and track repair requests</small>
+                        </span>
+                    </label>
+                    <label class="role-option">
+                        <input type="radio" name="role" value="faculty" {% if form_data.role == 'faculty' %}checked{% endif %}>
+                        <span class="role-option-icon">🏫</span>
+                        <span>
+                            <strong>Faculty</strong>
+                            <small>Report and monitor campus issues</small>
+                        </span>
+                    </label>
+                    <label class="role-option">
+                        <input type="radio" name="role" value="maintenance_staff" {% if form_data.role == 'maintenance_staff' %}checked{% endif %}>
+                        <span class="role-option-icon">🔧</span>
+                        <span>
+                            <strong>Maintenance Staff</strong>
+                            <small>Receive, update, and finish requests</small>
+                        </span>
+                    </label>
+                </div>
             </div>
 
             <div class="form-group">
