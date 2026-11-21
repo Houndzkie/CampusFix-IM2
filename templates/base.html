@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="{% static 'css/common/base.css' %}">
     {% block extra_css %}{% endblock %}
 </head>
-<body class="{% if user.is_authenticated and user.settings.dark_mode %}dark-mode{% endif %}">
+<body>
     <header class="citu-navbar">
         <a href="{% url 'home:home' %}" class="citu-brand">
             <div class="citu-brand-emblem">CF</div>
@@ -32,6 +32,10 @@
         {% endif %}
         <div class="citu-nav-right">
             {% block nav_actions %}{% endblock %}
+            <button type="button" class="theme-toggle" id="themeToggle" aria-label="Switch to dark mode" title="Toggle light/dark mode">
+                <span class="theme-toggle-icon" aria-hidden="true">🌙</span>
+                <span class="theme-toggle-text">Dark</span>
+            </button>
             {% if user.is_authenticated %}
             <a href="{% url 'login:logout' %}" id="buttonLogout">Logout</a>
             {% endif %}
@@ -46,6 +50,33 @@
         <p>&copy; 2026 <span>Cebu Institute of Technology - University</span>. CampusFix Maintenance & Repair Request System.</p>
     </footer>
 
+    <script>
+    (() => {
+        const root = document.body;
+        const button = document.getElementById("themeToggle");
+        const icon = button?.querySelector(".theme-toggle-icon");
+        const text = button?.querySelector(".theme-toggle-text");
+        const saved = localStorage.getItem("campusfix-theme");
+        const theme = saved || "light";
+
+        const applyTheme = (nextTheme) => {
+            const dark = nextTheme === "dark";
+            root.classList.toggle("dark-mode", dark);
+            if (icon) icon.textContent = dark ? "☀️" : "🌙";
+            if (text) text.textContent = dark ? "Light" : "Dark";
+            if (button) {
+                button.setAttribute("aria-label", dark ? "Switch to light mode" : "Switch to dark mode");
+            }
+        };
+
+        applyTheme(theme);
+        button?.addEventListener("click", () => {
+            const nextTheme = root.classList.contains("dark-mode") ? "light" : "dark";
+            localStorage.setItem("campusfix-theme", nextTheme);
+            applyTheme(nextTheme);
+        });
+    })();
+    </script>
     {% block extra_js %}{% endblock %}
 </body>
 </html>

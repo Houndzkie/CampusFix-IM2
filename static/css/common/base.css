@@ -208,6 +208,31 @@ body
     background-color: rgba(255, 255, 255, 0.15);
 }
 
+.theme-toggle
+{
+    min-height: 38px;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    border: 1px solid rgba(255, 255, 255, 0.35);
+    border-radius: 999px;
+    padding: 0.42rem 0.7rem;
+    background: rgba(255, 255, 255, 0.12);
+    color: #ffffff;
+    font-family: var(--font-stack);
+    font-size: 0.78rem;
+    font-weight: 750;
+    cursor: pointer;
+}
+
+.theme-toggle:hover,
+.theme-toggle:focus-visible
+{
+    background: rgba(255, 255, 255, 0.22);
+    outline: 2px solid var(--citu-gold);
+    outline-offset: 2px;
+}
+
 /* ==========================================================================
    Main Content Layout
    ========================================================================== */

@@ -1,6 +1,7 @@
 from django.contrib.auth import get_user_model
 from django.test import TestCase
 from django.urls import reverse
+from apps.profile.models import Profile
 
 
 class RegistrationLoginFlowTests(TestCase):
@@ -33,6 +34,8 @@ class RegistrationLoginFlowTests(TestCase):
 
         self.assertRedirects(response, reverse("login:login"))
         user = get_user_model().objects.get(school_id="flow-student-1")
+        profile = Profile.objects.get(user=user)
+        self.assertEqual(profile.full_name, "CampusFix Test Student")
 
         response = self.client.post(reverse("login:login"), {
             "school_id": user.school_id,

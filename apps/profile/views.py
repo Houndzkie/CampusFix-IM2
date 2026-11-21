@@ -12,6 +12,9 @@ from .models import Profile
 def profile_view(request):
     """Profile feature: view and update the logged-in user's profile info."""
     profile, _ = Profile.objects.get_or_create(user=request.user)
+    if not profile.full_name:
+        profile.full_name = request.user.full_name
+        profile.save(update_fields=["full_name"])
     account_profile, _ = UserProfile.objects.get_or_create(user=request.user)
 
     if request.method == "POST":
@@ -58,6 +61,9 @@ def public_profile_view(request, user_id):
     User = get_user_model()
     account = get_object_or_404(User, pk=user_id)
     profile, _ = Profile.objects.get_or_create(user=account)
+    if not profile.full_name:
+        profile.full_name = account.full_name
+        profile.save(update_fields=["full_name"])
     account_profile, _ = UserProfile.objects.get_or_create(user=account)
 
     context = {

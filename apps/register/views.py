@@ -50,9 +50,14 @@ def register_view(request):
             )
             # Auto-create a UserProfile for the new user
             from apps.home.models import UserProfile
+            from apps.profile.models import Profile
             UserProfile.objects.update_or_create(
                 user=user,
                 defaults={"contact_number": contact_number},
+            )
+            Profile.objects.update_or_create(
+                user=user,
+                defaults={"full_name": full_name},
             )
 
             messages.success(
