@@ -30,7 +30,12 @@
         <span style="font-size:.8rem;color:var(--color-text-muted);">Submitted {{ ticket.created_at|date:"M d, Y" }}</span>
       </div>
     </div>
-    <a href="{% url 'tickets:ticket_create' %}" class="btn btn-primary btn-sm">＋ New Ticket</a>
+    <div style="display:flex;gap:.5rem;flex-wrap:wrap;">
+      {% if can_edit %}
+      <a href="{% url 'tickets:edit_ticket' ticket.request_id %}" class="btn btn-secondary btn-sm">✏️ Edit Request</a>
+      {% endif %}
+      <a href="{% url 'tickets:ticket_create' %}" class="btn btn-primary btn-sm">＋ New Ticket</a>
+    </div>
   </div>
 
   <div class="detail-grid">
@@ -43,11 +48,15 @@
         <div class="meta-grid">
           <div class="meta-item">
             <span>Reporter</span>
-            <span>{{ ticket.reporter.full_name }}</span>
+            <span><a href="{% url 'profile:public_profile' ticket.reporter.user_id %}">{{ ticket.reporter.full_name }}</a></span>
           </div>
           <div class="meta-item">
             <span>Assigned To</span>
-            <span>{{ ticket.assigned_staff.full_name|default:"Unassigned" }}</span>
+            {% if ticket.assigned_staff %}
+            <span><a href="{% url 'profile:public_profile' ticket.assigned_staff.user_id %}">{{ ticket.assigned_staff.full_name }}</a></span>
+            {% else %}
+            <span>Unassigned</span>
+            {% endif %}
           </div>
           <div class="meta-item">
             <span>Location</span>

@@ -56,3 +56,48 @@
 {
     resize: vertical;
 }
+
+.profile-stat-grid
+{
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0.75rem;
+    margin-bottom: 1.25rem;
+}
+
+.profile-stat-card
+{
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 92px;
+    padding: 0.75rem;
+    border: 1px solid var(--color-border);
+    border-radius: 12px;
+    background: var(--color-surface-alt);
+    text-align: center;
+}
+
+.profile-stat-card strong
+{
+    color: var(--citu-maroon);
+    font-size: 1.75rem;
+    line-height: 1;
+}
+
+.profile-stat-card span
+{
+    margin-top: 0.45rem;
+    color: var(--color-text-muted);
+    font-size: 0.78rem;
+    font-weight: 700;
+}
+
+@media (max-width: 480px)
+{
+    .profile-stat-grid
+    {
+        grid-template-columns: 1fr;
+    }
+}

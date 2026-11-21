@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}{{ account.full_name }} – CampusFix{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/profile/profile.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="profile-card">
+  <div class="profile-card-banner">
+    <span class="auth-badge">{{ account.get_role_display }}</span>
+    <h1>{{ account.full_name }}</h1>
+    <p>CampusFix account details</p>
+  </div>
+  <div class="profile-card-body">
+    {% if profile.profile_image %}
+    <img class="profile-avatar" src="{{ profile.profile_image.url }}" alt="{{ account.full_name }}">
+    {% endif %}
+
+    <div class="profile-stat-grid">
+      {% if account.role in "student faculty" %}
+      <div class="profile-stat-card">
+        <strong>{{ reported_count }}</strong>
+        <span>Reported Requests</span>
+      </div>
+      <div class="profile-stat-card">
+        <strong>{{ resolved_count }}</strong>
+        <span>Successfully Resolved</span>
+      </div>
+      {% elif account.role in "admin maintenance_staff" %}
+      <div class="profile-stat-card">
+        <strong>{{ assigned_pending_count|add:assigned_in_progress_count }}</strong>
+        <span>Active Tasks</span>
+      </div>
+      <div class="profile-stat-card">
+        <strong>{{ assigned_finished_count }}</strong>
+        <span>Successfully Finished</span>
+      </div>
+      {% endif %}
+    </div>
+
+    <div class="meta-grid">
+      <div class="meta-item">
+        <span>Campus ID</span>
+        <span>{{ account.school_id }}</span>
+      </div>
+      <div class="meta-item">
+        <span>Email</span>
+        <span>{{ account.email }}</span>
+      </div>
+      <div class="meta-item">
+        <span>Contact Number</span>
+        <span>{{ account_profile.contact_number|default:"Not provided" }}</span>
+      </div>
+    </div>
+
+    {% if profile.bio %}
+    <div style="margin-top:1.25rem;">
+      <span style="font-size:.73rem;text-transform:uppercase;letter-spacing:.07em;color:var(--color-text-muted);">Bio</span>
+      <p style="margin-top:.35rem;line-height:1.6;">{{ profile.bio }}</p>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock %}

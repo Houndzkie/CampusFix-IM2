@@ -293,3 +293,58 @@ class TicketWorkflowTests(TestCase):
 		self.assertRedirects(response, reverse("tickets:ticket_detail", kwargs={"pk": ticket.request_id}))
 		self.assertEqual(ticket.status, "finished")
 		self.assertEqual(ticket.photos.filter(photo_type="proof").count(), 2)
+
+	def test_reporter_can_edit_unassigned_pending_ticket(self):
+		ticket = RepairRequest.objects.create(
+			reporter=self.reporter,
+			room=self.room,
+			title="Original title",
+			description="Original details",
+			priority="medium",
+			status="pending",
+		)
+		self.client.force_login(self.reporter)
+
+		response = self.client.post(
+			reverse("tickets:edit_ticket", kwargs={"pk": ticket.request_id}),
+			{
+				"title": "Updated title",
+				"description": "Updated details",
+				"priority": "high",
+				"building_id": str(self.building.building_id),
+				"room_id": str(self.room.room_id),
+			},
+		)
+
+		ticket.refresh_from_db()
+		self.assertRedirects(response, reverse("tickets:ticket_detail", kwargs={"pk": ticket.request_id}))
+		self.assertEqual(ticket.title, "Updated title")
+		self.assertEqual(ticket.description, "Updated details")
+		self.assertEqual(ticket.priority, "high")
+
+	def test_reporter_cannot_edit_ticket_after_maintenance_staff_takes_it(self):
+		ticket = RepairRequest.objects.create(
+			reporter=self.reporter,
+			assigned_staff=self.staff,
+			room=self.room,
+			title="Assigned repair",
+			description="Issue details",
+			priority="medium",
+			status="in_progress",
+		)
+		self.client.force_login(self.reporter)
+
+		response = self.client.post(
+			reverse("tickets:edit_ticket", kwargs={"pk": ticket.request_id}),
+			{
+				"title": "Changed title",
+				"description": "Changed details",
+				"priority": "low",
+				"building_id": str(self.building.building_id),
+				"room_id": str(self.room.room_id),
+			},
+		)
+
+		ticket.refresh_from_db()
+		self.assertRedirects(response, reverse("tickets:ticket_detail", kwargs={"pk": ticket.request_id}))
+		self.assertEqual(ticket.title, "Assigned repair")

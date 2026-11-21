@@ -22,6 +22,28 @@
             {% endfor %}
         {% endif %}
 
+        <div class="profile-stat-grid">
+            {% if request.user.role in "student faculty" %}
+            <div class="profile-stat-card">
+                <strong>{{ reported_count }}</strong>
+                <span>Reported Requests</span>
+            </div>
+            <div class="profile-stat-card">
+                <strong>{{ resolved_count }}</strong>
+                <span>Successfully Resolved</span>
+            </div>
+            {% elif request.user.role in "admin maintenance_staff" %}
+            <div class="profile-stat-card">
+                <strong>{{ assigned_pending_count|add:assigned_in_progress_count }}</strong>
+                <span>Active Tasks</span>
+            </div>
+            <div class="profile-stat-card">
+                <strong>{{ assigned_finished_count }}</strong>
+                <span>Successfully Finished</span>
+            </div>
+            {% endif %}
+        </div>
+
         {% if profile.profile_image %}
             <img class="profile-avatar" src="{{ profile.profile_image.url }}" alt="Profile photo">
         {% endif %}
@@ -32,6 +54,11 @@
             <div class="form-group">
                 <label for="full_name">Full Name</label>
                 <input type="text" id="full_name" name="full_name" value="{{ profile.full_name }}" placeholder="e.g., Juan Dela Cruz">
+            </div>
+
+            <div class="form-group">
+                <label for="contact_number">Contact Number *</label>
+                <input type="tel" id="contact_number" name="contact_number" value="{{ account_profile.contact_number|default:'' }}" placeholder="e.g., 09171234567" maxlength="15" required>
             </div>
 
             <div class="form-group">

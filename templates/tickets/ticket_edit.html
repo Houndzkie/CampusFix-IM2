@@ -1,0 +1,97 @@
+{% extends "base.html" %}
+{% load static %}
+
+{% block title %}Edit {{ ticket.title }} – CampusFix{% endblock %}
+
+{% block extra_css %}
+<link rel="stylesheet" href="{% static 'css/tickets/tickets.css' %}">
+{% endblock %}
+
+{% block extra_js %}
+<script>
+const buildingSelect = document.getElementById("selectBuilding");
+const roomSelect = document.getElementById("selectRoom");
+const roomsUrl = "{% url 'tickets:rooms_by_building' %}";
+
+buildingSelect.addEventListener("change", async function () {
+  roomSelect.innerHTML = '<option value="">Loading…</option>';
+  const response = await fetch(`${roomsUrl}?building_id=${encodeURIComponent(this.value)}`);
+  const data = await response.json();
+  roomSelect.innerHTML = '<option value="">— Select Room —</option>';
+  data.rooms.forEach(room => {
+    const option = document.createElement("option");
+    option.value = room.room_id;
+    option.textContent = room.room_name;
+    roomSelect.appendChild(option);
+  });
+});
+</script>
+{% endblock %}
+
+{% block nav_actions %}
+<a href="{% url 'tickets:ticket_detail' ticket.request_id %}">← Back to Request</a>
+{% endblock %}
+
+{% block content %}
+<div class="tickets-page" style="max-width:780px;">
+  <div class="page-header">
+    <h1 class="page-title">✏️ Edit Ticket</h1>
+  </div>
+
+  {% if messages %}
+  {% for message in messages %}
+  <div class="alert alert-{{ message.tags }}" style="margin-bottom:1rem;">{{ message }}</div>
+  {% endfor %}
+  {% endif %}
+
+  <div class="form-card">
+    <form method="post" enctype="multipart/form-data">
+      {% csrf_token %}
+      <div class="form-group">
+        <label for="inputTitle">Title *</label>
+        <input type="text" id="inputTitle" name="title" value="{{ ticket.title }}" maxlength="100" required>
+      </div>
+      <div class="form-group" style="margin-top:.85rem;">
+        <label for="inputDescription">Description *</label>
+        <textarea id="inputDescription" name="description" rows="4" required>{{ ticket.description }}</textarea>
+      </div>
+      <div class="form-row" style="margin-top:.85rem;">
+        <div class="form-group">
+          <label for="selectPriority">Priority *</label>
+          <select id="selectPriority" name="priority" required>
+            {% for priority in priority_choices %}
+            <option value="{{ priority }}" {% if priority == ticket.priority %}selected{% endif %}>{{ priority|capfirst }}</option>
+            {% endfor %}
+          </select>
+        </div>
+      </div>
+      <div class="form-section-title">Location</div>
+      <div class="form-row">
+        <div class="form-group">
+          <label for="selectBuilding">Building *</label>
+          <select id="selectBuilding" name="building_id" required>
+            {% for building in buildings %}
+            <option value="{{ building.building_id }}" {% if building.building_id == ticket.room.building_id %}selected{% endif %}>{{ building.building_code }}</option>
+            {% endfor %}
+          </select>
+        </div>
+        <div class="form-group">
+          <label for="selectRoom">Room *</label>
+          <select id="selectRoom" name="room_id" required>
+            <option value="{{ ticket.room.room_id }}">{{ ticket.room.room_name }}</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-section-title">Add Issue Photos (optional)</div>
+      <input type="file" name="photos" accept="image/*" multiple>
+      <small style="display:block;margin-top:.35rem;color:var(--color-text-muted);">Maximum 5 issue photos per ticket.</small>
+
+      <div style="margin-top:2rem;display:flex;gap:.75rem;justify-content:flex-end;">
+        <a href="{% url 'tickets:ticket_detail' ticket.request_id %}" class="btn btn-secondary">Cancel</a>
+        <button type="submit" class="btn btn-primary">Save Changes</button>
+      </div>
+    </form>
+  </div>
+</div>
+{% endblock %}

@@ -14,6 +14,7 @@ def register_view(request):
         full_name = request.POST.get("full_name", "").strip()
         school_id = request.POST.get("school_id", "").strip()
         email = request.POST.get("email", "").strip()
+        contact_number = request.POST.get("contact_number", "").strip()
         role = request.POST.get("role", "student").strip()
         password = request.POST.get("password", "")
         confirm_password = request.POST.get("confirm_password", "")
@@ -22,10 +23,11 @@ def register_view(request):
             "full_name": full_name,
             "school_id": school_id,
             "email": email,
+            "contact_number": contact_number,
             "role": role,
         }
 
-        if not full_name or not school_id or not email or not password or not confirm_password:
+        if not full_name or not school_id or not email or not contact_number or not password or not confirm_password:
             error_message = "All fields are required to register."
         elif role not in ("student", "faculty", "maintenance_staff"):
             error_message = "Please select a valid role."
@@ -48,7 +50,10 @@ def register_view(request):
             )
             # Auto-create a UserProfile for the new user
             from apps.home.models import UserProfile
-            UserProfile.objects.get_or_create(user=user)
+            UserProfile.objects.update_or_create(
+                user=user,
+                defaults={"contact_number": contact_number},
+            )
 
             messages.success(
                 request,

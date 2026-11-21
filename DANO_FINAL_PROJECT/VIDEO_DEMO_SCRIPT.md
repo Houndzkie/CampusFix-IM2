@@ -4,12 +4,15 @@
 
 - Start CampusFix with the project `.env` configured for Supabase. Never show the `.env` contents, password, or other credentials in the recording.
 - Sign in with an authorized Django staff or superuser account. The Reports page is restricted to accounts with Django staff privileges.
-- Supabase should contain demo data for the JOIN and SUBQUERY pages. Maintenance Staff accounts should have staff privileges, and reporter submissions require at least one issue photo.
+- Supabase has been reset and is ready for fresh demo accounts and repair requests. Create a Student, Faculty, and Maintenance Staff account with a contact number for each. Reporter submissions require at least one issue photo.
 - Prepare data in Supabase before recording:
   1. If there is no authorized admin account, run `python manage.py createsuperuser` from the project root. This project assigns the default `admin` role to a superuser.
   2. Confirm the migration seeded the RTL, NGE, GLE, and ACAD buildings and rooms 101–105, 201–205, 301–305, and 401–405.
-  3. Register a reporter account and submit two repair requests through CampusFix.
-  4. As Maintenance Staff, leave one request pending and move the other to in progress. Optionally create a finished request to show it is excluded from the active-reporters report.
+  3. Register a Student or Faculty reporter account with a contact number, then submit two repair requests with issue photos.
+  4. Show that the reporter can edit a request until Maintenance Staff takes it.
+  5. Register or create a Maintenance Staff account, take one request, and show the reporter and assigned maintenance profiles as clickable links.
+  6. Upload 1–5 completion proof photos and finish the request.
+  7. Visit each profile to show reported/resolved counts for Student/Faculty and active/finished task counts for Maintenance Staff.
 - Run `python manage.py showmigrations` and confirm migrations are applied. Do not use the reset scripts.
 - Use a browser window with a readable resolution and close unrelated windows.
 

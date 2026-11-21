@@ -236,6 +236,106 @@ def ticket_detail_view(request, pk):
         "staff_users": staff_users,
         "status_choices": STATUS_CHOICES,
         "unread_count": unread_count,
+        "can_edit": (
+            ticket.reporter == request.user
+            and ticket.assigned_staff is None
+            and ticket.status == "pending"
+        ),
+    })
+
+
+@login_required(login_url="login:login")
+def edit_ticket_view(request, pk):
+    ticket = get_object_or_404(
+        RepairRequest.objects.select_related("reporter", "room__building"),
+        pk=pk,
+    )
+    if ticket.reporter != request.user:
+        messages.error(request, "Only the reporter can edit this ticket.")
+        return redirect("tickets:ticket_detail", pk=pk)
+    if ticket.assigned_staff or ticket.status != "pending":
+        messages.error(request, "This ticket can no longer be edited because it has been taken.")
+        return redirect("tickets:ticket_detail", pk=pk)
+
+    buildings = Building.objects.order_by("building_code")
+    if request.method == "POST":
+        title = request.POST.get("title", "").strip()
+        description = request.POST.get("description", "").strip()
+        priority = request.POST.get("priority", "medium").strip()
+        building_id = request.POST.get("building_id")
+        room_id = request.POST.get("room_id")
+        photos = request.FILES.getlist("photos")
+        errors = []
+        if not title:
+            errors.append("Title is required.")
+        if not description:
+            errors.append("Description is required.")
+        if priority not in PRIORITY_CHOICES:
+            errors.append("Please select a valid priority.")
+        if not building_id or not room_id:
+            errors.append("Please select a building and room.")
+        existing_issue_count = ticket.photos.filter(photo_type="issue").count()
+        if existing_issue_count + len(photos) > MAX_PHOTO_COUNT:
+            errors.append(f"A ticket can have no more than {MAX_PHOTO_COUNT} issue photos.")
+        for photo_file in photos:
+            if photo_file.size > MAX_PHOTO_SIZE:
+                errors.append(f"Each photo must be no larger than {MAX_PHOTO_SIZE // (1024 * 1024)} MB.")
+                break
+            try:
+                with Image.open(photo_file) as image:
+                    image_format = image.format
+                    image.verify()
+                if image_format not in PHOTO_FORMATS:
+                    errors.append("Photos must be JPG, PNG, or WEBP images.")
+                    break
+                photo_file.seek(0)
+            except (UnidentifiedImageError, OSError):
+                errors.append("One or more uploaded files are not valid images.")
+                break
+
+        room = None
+        if building_id and room_id:
+            try:
+                room = Room.objects.get(pk=room_id, building_id=building_id)
+            except (Room.DoesNotExist, ValueError):
+                errors.append("The selected room does not belong to that building.")
+
+        if errors:
+            for error in errors:
+                messages.error(request, error)
+            return render(request, "tickets/ticket_edit.html", {
+                "ticket": ticket,
+                "buildings": buildings,
+                "priority_choices": PRIORITY_CHOICES,
+            })
+
+        ticket.title = title
+        ticket.description = description
+        ticket.priority = priority
+        ticket.room = room
+        ticket.save()
+
+        for photo_file in photos:
+            with Image.open(photo_file) as image:
+                photo_type = PHOTO_FORMATS[image.format]
+            photo_file.seek(0)
+            saved_path = default_storage.save(
+                f"request_photos/{ticket.request_id}/{Path(photo_file.name).name}",
+                photo_file,
+            )
+            RequestPhoto.objects.create(
+                request=ticket,
+                photo_url=default_storage.url(saved_path),
+                photo_type="issue",
+            )
+
+        messages.success(request, "Ticket details updated.")
+        return redirect("tickets:ticket_detail", pk=pk)
+
+    return render(request, "tickets/ticket_edit.html", {
+        "ticket": ticket,
+        "buildings": buildings,
+        "priority_choices": PRIORITY_CHOICES,
     })
 
 
