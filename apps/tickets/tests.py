@@ -354,6 +354,7 @@ class TicketWorkflowTests(TestCase):
 			{"tab": "active"},
 		)
 		self.assertEqual(active_response.status_code, 200)
+		self.assertContains(active_response, "css/tickets/tickets.css?v=2")
 		self.assertContains(active_response, "Taken by me")
 		self.assertContains(
 			active_response,

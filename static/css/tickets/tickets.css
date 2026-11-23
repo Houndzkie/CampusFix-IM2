@@ -36,31 +36,38 @@
 .ticket-tabs {
   display: flex;
   flex-wrap: wrap;
-  gap: .5rem;
-  margin-bottom: 1.25rem;
-  border-bottom: 1px solid var(--color-border);
+  gap: .65rem;
+  margin-bottom: 1.5rem;
 }
 .ticket-tab {
   display: inline-flex;
   align-items: center;
-  min-height: 2.5rem;
-  padding: .5rem .85rem;
-  border: 1px solid transparent;
-  border-bottom: 0;
-  border-radius: 8px 8px 0 0;
-  color: var(--color-text-muted);
+  justify-content: center;
+  min-height: 2.6rem;
+  padding: .55rem 1rem;
+  border: 1px solid var(--color-border);
+  border-radius: 9px;
+  background: var(--color-surface);
+  color: var(--color-text-main);
   font-size: .88rem;
-  font-weight: 650;
+  font-weight: 700;
   text-decoration: none;
+  transition: background-color .18s ease, border-color .18s ease, transform .18s ease;
 }
 .ticket-tab:hover {
   background: var(--color-surface-alt);
-  color: var(--color-text-main);
+  border-color: var(--citu-gold);
+  transform: translateY(-1px);
 }
 .ticket-tab.is-active {
-  border-color: var(--color-border);
-  background: var(--color-surface);
-  color: var(--citu-maroon, #800000);
+  border-color: var(--citu-gold);
+  background: linear-gradient(135deg, var(--citu-maroon, #800000), var(--citu-maroon-dark, #5c0000));
+  color: #fff;
+  box-shadow: 0 3px 10px rgba(92,0,0,.2);
+}
+.ticket-tab:focus-visible {
+  outline: 2px solid var(--citu-gold);
+  outline-offset: 2px;
 }
 
 .report-description {
