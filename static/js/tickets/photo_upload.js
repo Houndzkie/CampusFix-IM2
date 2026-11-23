@@ -21,7 +21,7 @@ document.querySelectorAll("[data-photo-upload]").forEach(upload => {
 
     selectedFiles.forEach((file, index) => {
       const item = document.createElement("div");
-      item.className = "photo-preview-item";
+      item.className = "photo-preview-item photo-preview-item--selected";
 
       const image = document.createElement("img");
       image.src = URL.createObjectURL(file);
@@ -31,7 +31,7 @@ document.querySelectorAll("[data-photo-upload]").forEach(upload => {
       const removeButton = document.createElement("button");
       removeButton.type = "button";
       removeButton.className = "photo-preview-remove";
-      removeButton.textContent = "Remove";
+      removeButton.textContent = "×";
       removeButton.setAttribute("aria-label", `Remove ${file.name}`);
       removeButton.addEventListener("click", () => {
         selectedFiles.splice(index, 1);
