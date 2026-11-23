@@ -11,6 +11,9 @@
   margin: 2.5rem auto;
   padding: 0 1.25rem;
 }
+.ticket-form-page {
+  flex: 0 1 780px;
+}
 
 .page-header {
   display: flex;
