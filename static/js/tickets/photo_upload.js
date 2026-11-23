@@ -60,6 +60,12 @@ document.querySelectorAll("[data-photo-upload]").forEach(upload => {
   }
 
   input.addEventListener("change", () => addFiles(input.files));
+  upload.addEventListener("clearphotos", () => {
+    selectedFiles = [];
+    input.value = "";
+    error.textContent = "";
+    renderPreviews();
+  });
 
   if (dropzone) {
     dropzone.addEventListener("click", event => {
@@ -79,3 +85,24 @@ document.querySelectorAll("[data-photo-upload]").forEach(upload => {
     });
   }
 });
+
+const statusSelect = document.querySelector("[data-status-select]");
+const finishProofUpload = document.querySelector("[data-finish-proof]");
+if (statusSelect && finishProofUpload) {
+  const proofInput = finishProofUpload.querySelector("[data-photo-input]");
+  const existingProofCount = Number(proofInput.dataset.photoExisting || 0);
+  let wasVisible = !finishProofUpload.hidden;
+
+  function updateProofVisibility() {
+    const visible = statusSelect.value === "finished";
+    finishProofUpload.hidden = !visible;
+    proofInput.required = visible && existingProofCount === 0;
+    if (wasVisible && !visible) {
+      finishProofUpload.dispatchEvent(new Event("clearphotos"));
+    }
+    wasVisible = visible;
+  }
+
+  statusSelect.addEventListener("change", updateProofVisibility);
+  updateProofVisibility();
+}

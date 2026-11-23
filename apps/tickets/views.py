@@ -376,6 +376,9 @@ def edit_ticket_view(request, pk):
 @require_POST
 def post_comment_view(request, pk):
     ticket = get_object_or_404(RepairRequest, pk=pk)
+    if ticket.status == "finished":
+        messages.error(request, "Finished requests are read-only.")
+        return redirect("tickets:ticket_detail", pk=pk)
     if request.user.role not in MAINTENANCE_ROLES and ticket.reporter != request.user:
         messages.error(request, "You do not have permission to comment on this ticket.")
         return redirect("tickets:ticket_list")
@@ -419,6 +422,10 @@ def update_status_view(request, pk):
         return redirect("tickets:ticket_detail", pk=pk)
 
     ticket = get_object_or_404(RepairRequest, pk=pk)
+    if ticket.status == "finished":
+        messages.error(request, "Finished requests are read-only.")
+        return redirect("tickets:ticket_detail", pk=pk)
+
     new_status = request.POST.get("new_status", "").strip()
     remarks = request.POST.get("remarks", "").strip()
     assigned_staff_id = request.POST.get("assigned_staff_id", "").strip()
@@ -430,6 +437,9 @@ def update_status_view(request, pk):
     existing_proof_count = ticket.photos.filter(photo_type="proof").count()
     if existing_proof_count + len(proof_photos) > MAX_PHOTO_COUNT:
         messages.error(request, f"A ticket can have no more than {MAX_PHOTO_COUNT} proof photos.")
+        return redirect("tickets:ticket_detail", pk=pk)
+    if proof_photos and new_status != "finished":
+        messages.error(request, "Proof photos can only be uploaded when finishing a request.")
         return redirect("tickets:ticket_detail", pk=pk)
     if new_status == "finished":
         if existing_proof_count == 0 and not proof_photos:

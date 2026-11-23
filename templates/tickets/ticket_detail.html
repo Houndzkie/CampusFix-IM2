@@ -158,9 +158,12 @@
           {% endfor %}
         </div>
         {% else %}
-        <p style="color:var(--color-text-muted);font-size:.9rem;margin-bottom:1rem;">No comments yet. Be the first to comment.</p>
+        <p style="color:var(--color-text-muted);font-size:.9rem;margin-bottom:1rem;">
+          {% if ticket.status == "finished" %}No comments recorded.{% else %}No comments yet. Be the first to comment.{% endif %}
+        </p>
         {% endif %}
 
+        {% if ticket.status != "finished" %}
         <form method="post" action="{% url 'tickets:post_comment' ticket.request_id %}" id="formPostComment">
           {% csrf_token %}
           <div class="form-group">
@@ -172,6 +175,9 @@
             Post Comment
           </button>
         </form>
+        {% else %}
+        <p style="color:var(--color-text-muted);font-size:.88rem;">This request is finished and read-only.</p>
+        {% endif %}
       </div>
 
     </div>
@@ -181,6 +187,7 @@
 
       <!-- Status Update (maintenance staff/admin only) -->
       {% if request.user.role in "admin maintenance_staff" %}
+      {% if ticket.status != "finished" %}
       <div class="sidebar-panel" id="panelStatusUpdate">
         <h3>⚙️ Update Status</h3>
         {% if not ticket.assigned_staff or ticket.assigned_staff.user_id == request.user.user_id %}
@@ -197,7 +204,7 @@
 
           <div class="form-group">
             <label for="selectNewStatus">New Status</label>
-            <select id="selectNewStatus" name="new_status" required>
+            <select id="selectNewStatus" name="new_status" data-status-select required>
               {% for s in status_choices %}
               <option value="{{ s }}" {% if s == ticket.status %}selected{% endif %}>{{ s|title }}</option>
               {% endfor %}
@@ -223,19 +230,19 @@
                       placeholder="Optional notes about this update…"></textarea>
           </div>
 
-          {% if ticket.status != "finished" %}
-          <div class="form-group" style="margin-top:.75rem;">
-            <div class="photo-upload" data-photo-upload>
-              <label for="inputProofPhotos">Completion Proof Photos</label>
-              <input type="file" id="inputProofPhotos" name="proof_photos" accept="image/*" multiple
-                     data-photo-input data-photo-max="{{ max_photo_count }}"
-                     data-photo-existing="{{ existing_proof_count }}">
-              <small style="color:var(--color-text-muted);">Required to finish the ticket. Up to {{ max_photo_count }} JPG, PNG, or WEBP images per ticket.</small>
-              <div class="photo-preview-grid" data-photo-preview></div>
-              <p class="photo-upload-error" data-photo-error role="alert" aria-live="polite"></p>
+          <div id="finishProofUpload" data-finish-proof hidden>
+            <div class="form-group" style="margin-top:.75rem;">
+              <div class="photo-upload" data-photo-upload>
+                <label for="inputProofPhotos">Completion Proof Photos</label>
+                <input type="file" id="inputProofPhotos" name="proof_photos" accept="image/*" multiple
+                       data-photo-input data-photo-max="{{ max_photo_count }}"
+                       data-photo-existing="{{ existing_proof_count }}">
+                <small style="color:var(--color-text-muted);">Required to finish the ticket. Up to {{ max_photo_count }} JPG, PNG, or WEBP images per ticket.</small>
+                <div class="photo-preview-grid" data-photo-preview></div>
+                <p class="photo-upload-error" data-photo-error role="alert" aria-live="polite"></p>
+              </div>
             </div>
           </div>
-          {% endif %}
 
           <button type="submit" class="btn btn-primary" style="width:100%;margin-top:1rem;" id="btnUpdateStatus">
             Save Update
@@ -245,6 +252,7 @@
         <p style="color:var(--color-text-muted);font-size:.88rem;">This request is assigned to another maintenance staff member.</p>
         {% endif %}
       </div>
+      {% endif %}
       {% endif %}
 
       <!-- Quick Info Card -->

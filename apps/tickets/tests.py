@@ -417,6 +417,101 @@ class TicketWorkflowTests(TestCase):
 		self.assertEqual(ticket.status, "in_progress")
 		self.assertContains(response, "At least one proof photo is required")
 
+	def test_proof_upload_control_is_hidden_until_staff_selects_finished(self):
+		ticket = RepairRequest.objects.create(
+			reporter=self.reporter,
+			room=self.room,
+			title="Repair in progress",
+			description="Issue details",
+			priority="medium",
+			status="in_progress",
+			assigned_staff=self.staff,
+		)
+		self.client.force_login(self.staff)
+
+		response = self.client.get(
+			reverse("tickets:ticket_detail", kwargs={"pk": ticket.request_id})
+		)
+
+		self.assertEqual(response.status_code, 200)
+		self.assertContains(response, 'id="finishProofUpload" data-finish-proof hidden')
+		self.assertContains(response, 'data-photo-max="5"')
+		self.assertContains(response, 'data-photo-existing="0"')
+
+	def test_proof_upload_is_rejected_unless_marking_request_finished(self):
+		ticket = RepairRequest.objects.create(
+			reporter=self.reporter,
+			room=self.room,
+			title="Repair in progress",
+			description="Issue details",
+			priority="medium",
+			status="in_progress",
+			assigned_staff=self.staff,
+		)
+		self.client.force_login(self.staff)
+
+		response = self.client.post(
+			reverse("tickets:update_status", kwargs={"pk": ticket.request_id}),
+			{
+				"new_status": "in_progress",
+				"proof_photos": [self.issue_photo("proof.jpg")],
+			},
+			follow=True,
+		)
+
+		ticket.refresh_from_db()
+		self.assertContains(
+			response,
+			"Proof photos can only be uploaded when finishing a request.",
+		)
+		self.assertEqual(ticket.status, "in_progress")
+		self.assertFalse(ticket.photos.filter(photo_type="proof").exists())
+
+	def test_finished_request_is_viewable_but_read_only(self):
+		ticket = RepairRequest.objects.create(
+			reporter=self.reporter,
+			room=self.room,
+			title="Finished repair",
+			description="Repair is complete.",
+			priority="medium",
+			status="finished",
+			assigned_staff=self.staff,
+		)
+		RequestPhoto.objects.create(
+			request=ticket,
+			photo_url="/media/proof_photos/finished.jpg",
+			photo_type="proof",
+		)
+		self.client.force_login(self.staff)
+
+		response = self.client.get(
+			reverse("tickets:ticket_detail", kwargs={"pk": ticket.request_id})
+		)
+
+		self.assertEqual(response.status_code, 200)
+		self.assertContains(response, "Finished repair")
+		self.assertContains(response, 'src="/media/proof_photos/finished.jpg"')
+		self.assertNotContains(response, 'id="panelStatusUpdate"')
+		self.assertNotContains(response, 'id="formUpdateStatus"')
+		self.assertNotContains(response, 'id="formPostComment"')
+
+		status_response = self.client.post(
+			reverse("tickets:update_status", kwargs={"pk": ticket.request_id}),
+			{"new_status": "in_progress"},
+			follow=True,
+		)
+		comment_response = self.client.post(
+			reverse("tickets:post_comment", kwargs={"pk": ticket.request_id}),
+			{"body": "Attempt to edit a finished request."},
+			follow=True,
+		)
+
+		ticket.refresh_from_db()
+		self.assertContains(status_response, "Finished requests are read-only.")
+		self.assertContains(comment_response, "Finished requests are read-only.")
+		self.assertEqual(ticket.status, "finished")
+		self.assertFalse(ticket.comments.exists())
+
 	def test_finished_status_accepts_up_to_five_proof_photos(self):
 		ticket = RepairRequest.objects.create(
 			reporter=self.reporter,
