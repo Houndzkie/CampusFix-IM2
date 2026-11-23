@@ -55,21 +55,48 @@ def _notify(user, request_obj, message):
 
 @login_required(login_url="login:login")
 def ticket_list_view(request):
-    """Reporters see their tickets, staff see available work, and admins see all."""
+    """Reporters see their tickets, staff see available/assigned work, and admins see all."""
     user = request.user
     is_admin = user.role == "admin"
     is_maintenance_staff = user.role == "maintenance_staff"
+    selected_tab = None
+    tab_title = ""
+    empty_title = "No Tickets Yet"
+    empty_description = "You haven't submitted any repair requests. Click the button above to get started."
     if is_admin:
         tickets = RepairRequest.objects.select_related(
             "reporter", "assigned_staff", "room__building"
         ).order_by("-created_at")
     elif is_maintenance_staff:
-        tickets = RepairRequest.objects.filter(
-            status__in=ACTIVE_REQUEST_STATUSES,
-            assigned_staff__isnull=True,
-        ).select_related(
+        selected_tab = request.GET.get("tab", "available")
+        if selected_tab not in ("available", "active", "finished"):
+            selected_tab = "available"
+
+        tickets = RepairRequest.objects.select_related(
             "reporter", "room__building"
-        ).order_by("-created_at")
+        )
+        if selected_tab == "available":
+            tickets = tickets.filter(
+                status__in=ACTIVE_REQUEST_STATUSES,
+                assigned_staff__isnull=True,
+            )
+            tab_title = "Available Repair Requests"
+            empty_title = "No available requests"
+            empty_description = "New repair requests will appear here until a staff member takes them."
+        elif selected_tab == "active":
+            tickets = tickets.filter(
+                status__in=ACTIVE_REQUEST_STATUSES,
+                assigned_staff=user,
+            )
+            tab_title = "My Active Requests"
+            empty_title = "No active requests"
+            empty_description = "Requests you take will appear here while they are being worked on."
+        else:
+            tickets = tickets.filter(status="finished", assigned_staff=user)
+            tab_title = "Finished Requests"
+            empty_title = "No finished requests"
+            empty_description = "Requests you finish will be available here to view."
+        tickets = tickets.order_by("-created_at")
     else:
         tickets = RepairRequest.objects.filter(reporter=user).select_related(
             "room__building"
@@ -82,6 +109,12 @@ def ticket_list_view(request):
         "unread_count": unread_count,
         "is_admin": is_admin,
         "is_maintenance_staff": is_maintenance_staff,
+        "selected_tab": selected_tab,
+        "tab_title": tab_title,
+        "empty_title": empty_title,
+        "empty_description": empty_description,
+        "is_available_tab": selected_tab == "available",
+        "is_finished_tab": selected_tab == "finished",
     })
 
 

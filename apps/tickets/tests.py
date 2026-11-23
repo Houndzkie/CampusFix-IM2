@@ -285,6 +285,102 @@ class TicketWorkflowTests(TestCase):
 		self.assertNotContains(response, "Claimed repair")
 		self.assertNotContains(response, "Finished repair")
 
+	def test_maintenance_staff_tabs_show_available_active_and_finished_requests(self):
+		other_staff = User.objects.create_user(
+			school_id="staff-2",
+			email="staff-2@example.edu",
+			full_name="Other Staff",
+			password="test-password",
+			role="maintenance_staff",
+			is_staff=True,
+		)
+		available = RepairRequest.objects.create(
+			reporter=self.reporter,
+			room=self.room,
+			title="Available for anyone",
+			description="Not yet taken.",
+			priority="medium",
+			status="pending",
+		)
+		active = RepairRequest.objects.create(
+			reporter=self.reporter,
+			room=self.room,
+			title="Taken by me",
+			description="Assigned to this staff member.",
+			priority="medium",
+			status="pending",
+		)
+		finished = RepairRequest.objects.create(
+			reporter=self.reporter,
+			assigned_staff=self.staff,
+			room=self.room,
+			title="Finished by me",
+			description="Completed by this staff member.",
+			priority="medium",
+			status="finished",
+		)
+		RepairRequest.objects.create(
+			reporter=self.other_reporter,
+			assigned_staff=other_staff,
+			room=self.room,
+			title="Taken by other staff",
+			description="Assigned to someone else.",
+			priority="medium",
+			status="in_progress",
+		)
+		RepairRequest.objects.create(
+			reporter=self.other_reporter,
+			assigned_staff=other_staff,
+			room=self.room,
+			title="Finished by other staff",
+			description="Completed by someone else.",
+			priority="medium",
+			status="finished",
+		)
+		self.client.force_login(self.staff)
+		take_response = self.client.post(
+			reverse("tickets:take_ticket", kwargs={"pk": active.request_id})
+		)
+		self.assertRedirects(
+			take_response,
+			reverse("tickets:ticket_detail", kwargs={"pk": active.request_id}),
+		)
+		active.refresh_from_db()
+		self.assertEqual(active.assigned_staff, self.staff)
+		self.assertEqual(active.status, "in_progress")
+
+		active_response = self.client.get(
+			reverse("tickets:ticket_list"),
+			{"tab": "active"},
+		)
+		self.assertEqual(active_response.status_code, 200)
+		self.assertContains(active_response, "Taken by me")
+		self.assertContains(
+			active_response,
+			reverse("tickets:ticket_detail", kwargs={"pk": active.request_id}),
+		)
+		self.assertContains(active_response, "Open Request")
+		self.assertContains(active_response, "In Progress")
+		self.assertNotContains(active_response, "Available for anyone")
+		self.assertNotContains(active_response, "Finished by me")
+		self.assertNotContains(active_response, "Taken by other staff")
+
+		finished_response = self.client.get(
+			reverse("tickets:ticket_list"),
+			{"tab": "finished"},
+		)
+		self.assertEqual(finished_response.status_code, 200)
+		self.assertContains(finished_response, "Finished by me")
+		self.assertContains(finished_response, "View Request")
+		self.assertNotContains(finished_response, "Taken by me")
+		self.assertNotContains(finished_response, "Finished by other staff")
+
+		available_response = self.client.get(reverse("tickets:ticket_list"))
+		self.assertEqual(available_response.status_code, 200)
+		self.assertContains(available_response, "Available for anyone")
+		self.assertNotContains(available_response, "Taken by me")
+		self.assertNotContains(available_response, "Finished by me")
+
 	def test_reporter_comment_notifies_staff_when_ticket_is_unassigned(self):
 		ticket = RepairRequest.objects.create(
 			reporter=self.reporter,

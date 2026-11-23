@@ -12,7 +12,7 @@
   <div class="page-header">
     <h1 class="page-title">
       🎫
-      {% if is_admin %}All Tickets{% elif is_maintenance_staff %}Available Repair Requests{% else %}My Tickets{% endif %}
+      {% if is_admin %}All Tickets{% elif is_maintenance_staff %}{{ tab_title }}{% else %}My Tickets{% endif %}
     </h1>
     {% if not is_maintenance_staff %}
     <a href="{% url 'tickets:ticket_create' %}" class="btn btn-primary" id="btnCreateTicket">＋ Submit New Ticket</a>
@@ -25,6 +25,20 @@
         {{ msg }}
       </div>
     {% endfor %}
+  {% endif %}
+
+  {% if is_maintenance_staff %}
+  <nav class="ticket-tabs" aria-label="Repair request categories">
+    <a href="{% url 'tickets:ticket_list' %}?tab=available"
+       class="ticket-tab{% if selected_tab == 'available' %} is-active{% endif %}"
+       {% if selected_tab == "available" %}aria-current="page"{% endif %}>Available</a>
+    <a href="{% url 'tickets:ticket_list' %}?tab=active"
+       class="ticket-tab{% if selected_tab == 'active' %} is-active{% endif %}"
+       {% if selected_tab == "active" %}aria-current="page"{% endif %}>My Active Requests</a>
+    <a href="{% url 'tickets:ticket_list' %}?tab=finished"
+       class="ticket-tab{% if selected_tab == 'finished' %} is-active{% endif %}"
+       {% if selected_tab == "finished" %}aria-current="page"{% endif %}>Finished</a>
+  </nav>
   {% endif %}
 
   {% if tickets %}
@@ -62,10 +76,16 @@
           {% endif %}
           {% if is_maintenance_staff %}
           <td>
+            {% if is_available_tab %}
             <form method="post" action="{% url 'tickets:take_ticket' ticket.request_id %}">
               {% csrf_token %}
               <button type="submit" class="btn btn-primary btn-sm">Take Request</button>
             </form>
+            {% else %}
+            <a href="{% url 'tickets:ticket_detail' ticket.request_id %}" class="btn btn-secondary btn-sm">
+              {% if is_finished_tab %}View Request{% else %}Open Request{% endif %}
+            </a>
+            {% endif %}
           </td>
           {% endif %}
         </tr>
@@ -77,8 +97,8 @@
   <div class="empty-state" id="emptyTicketState">
     <div class="empty-icon">📋</div>
     {% if is_maintenance_staff %}
-    <h3>No available requests</h3>
-    <p>New repair requests will appear here until a staff member takes them.</p>
+    <h3>{{ empty_title }}</h3>
+    <p>{{ empty_description }}</p>
     {% else %}
     <h3>No Tickets Yet</h3>
     <p>You haven't submitted any repair requests. Click the button above to get started.</p>
