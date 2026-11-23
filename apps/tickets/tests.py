@@ -203,6 +203,42 @@ class TicketWorkflowTests(TestCase):
 		self.assertContains(response, f"{self.building.building_name} / {self.room.room_name}")
 		self.assertNotContains(response, "Category")
 
+	def test_maintenance_staff_cannot_create_requests_or_see_new_ticket_links(self):
+		ticket = RepairRequest.objects.create(
+			reporter=self.reporter,
+			room=self.room,
+			title="Available repair",
+			description="Waiting for maintenance.",
+			priority="medium",
+			status="pending",
+		)
+		self.client.force_login(self.staff)
+		create_url = reverse("tickets:ticket_create")
+
+		for url in (
+			reverse("home:home"),
+			reverse("tickets:ticket_list"),
+			reverse("tickets:ticket_detail", kwargs={"pk": ticket.request_id}),
+		):
+			response = self.client.get(url)
+			self.assertEqual(response.status_code, 200)
+			self.assertNotContains(response, f'href="{create_url}"')
+
+		response = self.client.post(
+			create_url,
+			{
+				"title": "Staff-created request",
+				"description": "A maintenance staff member should not submit this.",
+				"priority": "medium",
+				"building_id": self.building.pk,
+				"room_id": self.room.pk,
+			},
+			follow=True,
+		)
+
+		self.assertContains(response, "Maintenance staff cannot submit repair requests.")
+		self.assertEqual(RepairRequest.objects.count(), 1)
+
 	def test_maintenance_staff_ticket_list_shows_only_unclaimed_pending_requests(self):
 		RepairRequest.objects.create(
 			reporter=self.reporter,

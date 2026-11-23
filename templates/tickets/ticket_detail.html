@@ -34,7 +34,9 @@
       {% if can_edit %}
       <a href="{% url 'tickets:edit_ticket' ticket.request_id %}" class="btn btn-secondary btn-sm">✏️ Edit Request</a>
       {% endif %}
+      {% if request.user.role != "maintenance_staff" %}
       <a href="{% url 'tickets:ticket_create' %}" class="btn btn-primary btn-sm">＋ New Ticket</a>
+      {% endif %}
     </div>
   </div>
 

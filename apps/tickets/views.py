@@ -114,6 +114,10 @@ def active_reporters_view(request):
 
 @login_required(login_url="login:login")
 def ticket_create_view(request):
+    if request.user.role == "maintenance_staff":
+        messages.error(request, "Maintenance staff cannot submit repair requests.")
+        return redirect("tickets:ticket_list")
+
     buildings = Building.objects.order_by("building_name")
 
     if request.method == "POST":

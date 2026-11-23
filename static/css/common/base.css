@@ -208,6 +208,19 @@ body
     background-color: rgba(255, 255, 255, 0.15);
 }
 
+.citu-nav-right a.citu-primary-nav-cta
+{
+    padding: 0.45rem 0.7rem;
+    color: var(--citu-maroon-deep);
+}
+
+.citu-nav-right a.citu-primary-nav-cta:hover,
+.citu-nav-right a.citu-primary-nav-cta:focus-visible
+{
+    background-color: var(--citu-gold-hover);
+    color: var(--citu-maroon-deep);
+}
+
 .theme-toggle
 {
     min-height: 38px;

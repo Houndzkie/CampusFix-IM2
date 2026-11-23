@@ -104,9 +104,11 @@
         <div style="margin-top:2rem;">
             <h2 style="font-size:1rem;text-transform:uppercase;letter-spacing:.08em;color:var(--color-text-muted);margin-bottom:1rem;">Quick Actions</h2>
             <div style="display:flex;gap:1rem;flex-wrap:wrap;">
+                {% if not is_maintenance_staff %}
                 <a href="{% url 'tickets:ticket_create' %}" class="btn btn-primary" id="btnQuickCreate">
                     📝 Submit Repair Request
                 </a>
+                {% endif %}
                 <a href="{% url 'tickets:ticket_list' %}" class="btn btn-secondary" id="btnQuickList">
                     📋 View All Tickets
                 </a>
