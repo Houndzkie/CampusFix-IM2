@@ -7,3 +7,8 @@ __pycache__/
 *.zip
 *.sqlite3
 media/
+
+# Attached assignment documents
+Final_Project_Development_Monitoring_Instructions 1.pdf
+Guided_Implementation_JOINS_and_SUBQUERIES_Django_Supabase.pdf
+DANO_FINAL_PROJECT/VIDEO_DEMO_SCRIPT.md
