@@ -182,7 +182,7 @@
       <div class="sidebar-panel" id="panelStatusUpdate">
         <h3>⚙️ Update Status</h3>
         {% if not ticket.assigned_staff or ticket.assigned_staff.user_id == request.user.user_id %}
-        {% if not ticket.assigned_staff %}
+        {% if can_take %}
         <form method="post" action="{% url 'tickets:take_ticket' ticket.request_id %}" id="formTakeTicket" style="margin-bottom:.75rem;">
           {% csrf_token %}
           <button type="submit" class="btn btn-primary" style="width:100%;" id="btnTakeTicket">

@@ -28,7 +28,7 @@
             <div class="overview-card" id="statCardTotal">
                 <h3 class="overview-card-title">
                     <span>🎫</span>
-                    {% if request.user.role in "admin staff" %}All Tickets{% else %}My Tickets{% endif %}
+                    {% if is_admin %}All Tickets{% elif is_maintenance_staff %}All Requests{% else %}My Tickets{% endif %}
                 </h3>
                 <p class="stat-number" id="statTotal">{{ total_tickets }}</p>
                 <a href="{% url 'tickets:ticket_list' %}" class="btn btn-primary btn-sm" style="margin-top:.75rem;">View All</a>
@@ -52,6 +52,53 @@
                 <p class="overview-card-desc">Completed repairs</p>
             </div>
         </div>
+
+        {% if is_maintenance_staff %}
+        <section class="tickets-page" style="padding:0;margin-top:2rem;">
+            <div class="page-header">
+                <h2 class="page-title" style="font-size:1.2rem;">Available Repair Requests</h2>
+                <a href="{% url 'tickets:ticket_list' %}" class="btn btn-secondary btn-sm">View Queue</a>
+            </div>
+            {% if available_requests %}
+            <div class="tickets-table-wrap">
+                <table class="tickets-table">
+                    <thead>
+                        <tr>
+                            <th>Request</th>
+                            <th>Location</th>
+                            <th>Priority</th>
+                            <th>Reporter</th>
+                            <th>Submitted</th>
+                            <th>Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for ticket in available_requests %}
+                        <tr>
+                            <td><a href="{% url 'tickets:ticket_detail' ticket.request_id %}" class="ticket-title-link">{{ ticket.title }}</a></td>
+                            <td>{{ ticket.room.building.building_name }} / {{ ticket.room.room_name }}</td>
+                            <td><span class="badge-priority badge-{{ ticket.priority }}">{{ ticket.priority|title }}</span></td>
+                            <td>{{ ticket.reporter.full_name }}</td>
+                            <td>{{ ticket.created_at|date:"M d, Y" }}</td>
+                            <td>
+                                <form method="post" action="{% url 'tickets:take_ticket' ticket.request_id %}">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-primary btn-sm">Take Request</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <h3>No available requests</h3>
+                <p>New repair requests will appear here until a staff member takes them.</p>
+            </div>
+            {% endif %}
+        </section>
+        {% endif %}
 
         <!-- Quick Actions -->
         <div style="margin-top:2rem;">

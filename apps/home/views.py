@@ -8,12 +8,28 @@ from apps.home.models import Notification, RepairRequest
 def home_view(request):
     """Home feature: the main authenticated landing screen with quick stats."""
     user = request.user
+    available_requests = RepairRequest.objects.none()
 
-    if user.role in ("admin", "maintenance_staff"):
+    if user.role == "admin":
         total_tickets = RepairRequest.objects.count()
         open_tickets = RepairRequest.objects.filter(status="pending").count()
         in_progress = RepairRequest.objects.filter(status="in_progress").count()
         resolved = RepairRequest.objects.filter(status="finished").count()
+    elif user.role == "maintenance_staff":
+        available_requests = RepairRequest.objects.filter(
+            status__in=RepairRequest.ACTIVE_STATUSES,
+            assigned_staff__isnull=True,
+        ).select_related("reporter", "room__building").order_by("-created_at")
+        total_tickets = RepairRequest.objects.count()
+        open_tickets = RepairRequest.objects.filter(status="pending").count()
+        in_progress = RepairRequest.objects.filter(
+            assigned_staff=user,
+            status="in_progress",
+        ).count()
+        resolved = RepairRequest.objects.filter(
+            assigned_staff=user,
+            status="finished",
+        ).count()
     else:
         total_tickets = RepairRequest.objects.filter(reporter=user).count()
         open_tickets = RepairRequest.objects.filter(reporter=user, status="pending").count()
@@ -28,4 +44,7 @@ def home_view(request):
         "in_progress": in_progress,
         "resolved": resolved,
         "unread_count": unread_count,
+        "available_requests": available_requests,
+        "is_admin": user.role == "admin",
+        "is_maintenance_staff": user.role == "maintenance_staff",
     })

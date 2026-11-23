@@ -36,7 +36,7 @@ STATUS_CHOICES = ["pending", "in_progress", "finished"]
 MAX_PHOTO_COUNT = 5
 MAX_PHOTO_SIZE = 5 * 1024 * 1024
 PHOTO_FORMATS = {"JPEG": "jpg", "PNG": "png", "WEBP": "webp"}
-ACTIVE_REQUEST_STATUSES = ("pending", "in_progress")
+ACTIVE_REQUEST_STATUSES = RepairRequest.ACTIVE_STATUSES
 MAINTENANCE_ROLES = ("admin", "maintenance_staff")
 
 
@@ -55,11 +55,20 @@ def _notify(user, request_obj, message):
 
 @login_required(login_url="login:login")
 def ticket_list_view(request):
-    """Dashboard: reporters see their own tickets; staff/admin see all."""
+    """Reporters see their tickets, staff see available work, and admins see all."""
     user = request.user
-    if user.role in ("admin", "maintenance_staff"):
+    is_admin = user.role == "admin"
+    is_maintenance_staff = user.role == "maintenance_staff"
+    if is_admin:
         tickets = RepairRequest.objects.select_related(
             "reporter", "assigned_staff", "room__building"
+        ).order_by("-created_at")
+    elif is_maintenance_staff:
+        tickets = RepairRequest.objects.filter(
+            status__in=ACTIVE_REQUEST_STATUSES,
+            assigned_staff__isnull=True,
+        ).select_related(
+            "reporter", "room__building"
         ).order_by("-created_at")
     else:
         tickets = RepairRequest.objects.filter(reporter=user).select_related(
@@ -71,6 +80,8 @@ def ticket_list_view(request):
     return render(request, "tickets/ticket_list.html", {
         "tickets": tickets,
         "unread_count": unread_count,
+        "is_admin": is_admin,
+        "is_maintenance_staff": is_maintenance_staff,
     })
 
 
@@ -240,6 +251,10 @@ def ticket_detail_view(request, pk):
             ticket.reporter == request.user
             and ticket.assigned_staff is None
             and ticket.status == "pending"
+        ),
+        "can_take": (
+            ticket.assigned_staff is None
+            and ticket.status in ACTIVE_REQUEST_STATUSES
         ),
     })
 
@@ -485,19 +500,24 @@ def take_ticket_view(request, pk):
         return redirect("tickets:ticket_detail", pk=pk)
 
     ticket = get_object_or_404(RepairRequest, pk=pk)
-    if ticket.assigned_staff and ticket.assigned_staff != request.user:
-        messages.error(request, "This ticket is already assigned to another maintenance staff.")
+    claimed = RepairRequest.objects.filter(
+        pk=pk,
+        status__in=ACTIVE_REQUEST_STATUSES,
+        assigned_staff__isnull=True,
+    ).update(
+        assigned_staff=request.user,
+        status="in_progress",
+        completed_at=None,
+        updated_at=timezone.now(),
+    )
+    if not claimed:
+        messages.error(request, "This request is no longer available to take.")
         return redirect("tickets:ticket_detail", pk=pk)
 
-    old_status = ticket.status
-    ticket.assigned_staff = request.user
-    ticket.status = "in_progress"
-    ticket.completed_at = None
-    ticket.save()
     StatusHistory.objects.create(
         request=ticket,
         changed_by=request.user,
-        old_status=old_status,
+        old_status=ticket.status,
         new_status="in_progress",
         remarks="Ticket taken by maintenance staff.",
     )

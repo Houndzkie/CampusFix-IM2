@@ -1,7 +1,7 @@
 {% extends "base.html" %}
 {% load static %}
 
-{% block title %}My Tickets – CampusFix{% endblock %}
+{% block title %}Repair Requests – CampusFix{% endblock %}
 
 {% block extra_css %}
 <link rel="stylesheet" href="{% static 'css/tickets/tickets.css' %}">
@@ -12,9 +12,11 @@
   <div class="page-header">
     <h1 class="page-title">
       🎫
-      {% if request.user.role in "admin staff" %}All Tickets{% else %}My Tickets{% endif %}
+      {% if is_admin %}All Tickets{% elif is_maintenance_staff %}Available Repair Requests{% else %}My Tickets{% endif %}
     </h1>
+    {% if not is_maintenance_staff %}
     <a href="{% url 'tickets:ticket_create' %}" class="btn btn-primary" id="btnCreateTicket">＋ Submit New Ticket</a>
+    {% endif %}
   </div>
 
   {% if messages %}
@@ -35,7 +37,8 @@
           <th>Priority</th>
           <th>Status</th>
           <th>Submitted</th>
-          {% if request.user.role in "admin staff" %}<th>Reporter</th>{% endif %}
+          {% if is_admin or is_maintenance_staff %}<th>Reporter</th>{% endif %}
+          {% if is_maintenance_staff %}<th>Action</th>{% endif %}
         </tr>
       </thead>
       <tbody>
@@ -54,8 +57,16 @@
             </span>
           </td>
           <td>{{ ticket.created_at|date:"M d, Y" }}</td>
-          {% if request.user.role in "admin staff" %}
+          {% if is_admin or is_maintenance_staff %}
           <td>{{ ticket.reporter.full_name }}</td>
+          {% endif %}
+          {% if is_maintenance_staff %}
+          <td>
+            <form method="post" action="{% url 'tickets:take_ticket' ticket.request_id %}">
+              {% csrf_token %}
+              <button type="submit" class="btn btn-primary btn-sm">Take Request</button>
+            </form>
+          </td>
           {% endif %}
         </tr>
         {% endfor %}
@@ -65,9 +76,14 @@
   {% else %}
   <div class="empty-state" id="emptyTicketState">
     <div class="empty-icon">📋</div>
+    {% if is_maintenance_staff %}
+    <h3>No available requests</h3>
+    <p>New repair requests will appear here until a staff member takes them.</p>
+    {% else %}
     <h3>No Tickets Yet</h3>
     <p>You haven't submitted any repair requests. Click the button above to get started.</p>
     <a href="{% url 'tickets:ticket_create' %}" class="btn btn-primary" style="margin-top:1rem;">Submit First Ticket</a>
+    {% endif %}
   </div>
   {% endif %}
 </div>

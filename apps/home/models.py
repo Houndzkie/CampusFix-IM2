@@ -89,6 +89,7 @@ class RepairRequest(models.Model):
         ("in_progress", "In Progress"),
         ("finished", "Finished"),
     )
+    ACTIVE_STATUSES = ("pending", "in_progress")
     request_id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     reporter = models.ForeignKey(User, on_delete=models.CASCADE, related_name='reported_requests')
     assigned_staff = models.ForeignKey(User, on_delete=models.SET_NULL, null=True, blank=True, related_name='assigned_requests')

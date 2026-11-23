@@ -186,6 +186,52 @@ class TicketWorkflowTests(TestCase):
 		self.assertContains(response, f"{self.building.building_name} / {self.room.room_name}")
 		self.assertNotContains(response, "Category")
 
+	def test_maintenance_staff_ticket_list_shows_only_unclaimed_pending_requests(self):
+		RepairRequest.objects.create(
+			reporter=self.reporter,
+			room=self.room,
+			title="Available repair",
+			description="Waiting for maintenance.",
+			priority="high",
+			status="pending",
+		)
+		RepairRequest.objects.create(
+			reporter=self.other_reporter,
+			assigned_staff=self.staff,
+			room=self.room,
+			title="Claimed repair",
+			description="Already assigned.",
+			priority="medium",
+			status="in_progress",
+		)
+		RepairRequest.objects.create(
+			reporter=self.other_reporter,
+			room=self.room,
+			title="Unclaimed in-progress repair",
+			description="Active but not yet assigned.",
+			priority="medium",
+			status="in_progress",
+		)
+		RepairRequest.objects.create(
+			reporter=self.other_reporter,
+			room=self.room,
+			title="Finished repair",
+			description="Already finished.",
+			priority="low",
+			status="finished",
+		)
+		self.client.force_login(self.staff)
+
+		response = self.client.get(reverse("tickets:ticket_list"))
+
+		self.assertEqual(response.status_code, 200)
+		self.assertContains(response, "Available repair")
+		self.assertContains(response, "Unclaimed in-progress repair")
+		self.assertContains(response, "Take Request")
+		self.assertContains(response, self.reporter.full_name)
+		self.assertNotContains(response, "Claimed repair")
+		self.assertNotContains(response, "Finished repair")
+
 	def test_reporter_comment_notifies_staff_when_ticket_is_unassigned(self):
 		ticket = RepairRequest.objects.create(
 			reporter=self.reporter,
@@ -245,6 +291,56 @@ class TicketWorkflowTests(TestCase):
 		self.assertRedirects(response, reverse("tickets:ticket_detail", kwargs={"pk": ticket.request_id}))
 		self.assertEqual(ticket.assigned_staff, self.staff)
 		self.assertEqual(ticket.status, "in_progress")
+
+	def test_maintenance_staff_cannot_take_a_request_that_is_not_pending_and_unassigned(self):
+		ticket = RepairRequest.objects.create(
+			reporter=self.reporter,
+			room=self.room,
+			title="Finished repair",
+			description="Already finished.",
+			priority="medium",
+			status="finished",
+		)
+		self.client.force_login(self.staff)
+
+		response = self.client.post(
+			reverse("tickets:take_ticket", kwargs={"pk": ticket.request_id})
+		)
+
+		ticket.refresh_from_db()
+		self.assertRedirects(
+			response,
+			reverse("tickets:ticket_detail", kwargs={"pk": ticket.request_id}),
+		)
+		self.assertIsNone(ticket.assigned_staff)
+		self.assertEqual(ticket.status, "finished")
+
+	def test_maintenance_staff_can_take_an_unassigned_in_progress_request(self):
+		ticket = RepairRequest.objects.create(
+			reporter=self.reporter,
+			room=self.room,
+			title="Unassigned active repair",
+			description="Active, but no staff member has taken it.",
+			priority="medium",
+			status="in_progress",
+		)
+		self.client.force_login(self.staff)
+
+		response = self.client.post(
+			reverse("tickets:take_ticket", kwargs={"pk": ticket.request_id})
+		)
+
+		ticket.refresh_from_db()
+		self.assertRedirects(
+			response,
+			reverse("tickets:ticket_detail", kwargs={"pk": ticket.request_id}),
+		)
+		self.assertEqual(ticket.assigned_staff, self.staff)
+		self.assertEqual(ticket.status, "in_progress")
+		self.assertEqual(
+			ticket.status_history.latest("changed_at").old_status,
+			"in_progress",
+		)
 
 	def test_finished_status_requires_proof_photo(self):
 		ticket = RepairRequest.objects.create(
