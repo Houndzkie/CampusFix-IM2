@@ -193,6 +193,34 @@
   border-radius: 8px;
   border: 2px solid #c5cae9;
 }
+.photo-preview-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: .25rem;
+}
+.photo-preview-remove {
+  border: 0;
+  border-radius: 999px;
+  padding: .2rem .55rem;
+  background: #b3261e;
+  color: #fff;
+  font: inherit;
+  font-size: .72rem;
+  cursor: pointer;
+}
+.photo-preview-label,
+.photo-upload-note {
+  color: var(--color-text-muted);
+  font-size: .78rem;
+}
+.photo-upload-error {
+  min-height: 1.2em;
+  margin: .4rem 0 0;
+  color: #b3261e;
+  font-size: .82rem;
+}
 
 /* ── Ticket detail ───────────────────────────────────────────────── */
 .detail-grid {

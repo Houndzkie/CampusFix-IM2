@@ -9,6 +9,7 @@ from apps.home.models import (
 	Notification,
 	RepairRequest,
 	RequestComment,
+	RequestPhoto,
 	Room,
 	User,
 )
@@ -167,6 +168,22 @@ class TicketWorkflowTests(TestCase):
 		self.assertEqual(ticket.status_history.count(), 1)
 		self.assertEqual(ticket.status_history.get().new_status, "pending")
 		self.assertTrue(ticket.photos.filter(photo_type="issue").exists())
+
+	def test_create_rejects_more_than_five_issue_photos(self):
+		self.client.force_login(self.reporter)
+
+		response = self.client.post(reverse("tickets:ticket_create"), {
+			"title": "Broken light",
+			"description": "The room light is out.",
+			"priority": "medium",
+			"building_id": self.building.pk,
+			"room_id": self.room.pk,
+			"photos": [self.issue_photo(f"issue-{index}.jpg") for index in range(6)],
+		})
+
+		self.assertEqual(response.status_code, 200)
+		self.assertContains(response, "You can upload up to 5 photos.")
+		self.assertEqual(RepairRequest.objects.count(), 0)
 
 	def test_ticket_list_renders_status_label(self):
 		RepairRequest.objects.create(
@@ -374,6 +391,12 @@ class TicketWorkflowTests(TestCase):
 			status="in_progress",
 			assigned_staff=self.staff,
 		)
+		for index in range(3):
+			RequestPhoto.objects.create(
+				request=ticket,
+				photo_url=f"/media/proof_photos/existing-{index}.jpg",
+				photo_type="proof",
+			)
 		self.client.force_login(self.staff)
 
 		response = self.client.post(
@@ -388,7 +411,42 @@ class TicketWorkflowTests(TestCase):
 		ticket.refresh_from_db()
 		self.assertRedirects(response, reverse("tickets:ticket_detail", kwargs={"pk": ticket.request_id}))
 		self.assertEqual(ticket.status, "finished")
-		self.assertEqual(ticket.photos.filter(photo_type="proof").count(), 2)
+		self.assertEqual(ticket.photos.filter(photo_type="proof").count(), 5)
+
+	def test_proof_upload_rejects_files_that_exceed_the_total_photo_limit(self):
+		ticket = RepairRequest.objects.create(
+			reporter=self.reporter,
+			room=self.room,
+			title="Repair in progress",
+			description="Issue details",
+			priority="medium",
+			status="in_progress",
+			assigned_staff=self.staff,
+		)
+		for index in range(4):
+			RequestPhoto.objects.create(
+				request=ticket,
+				photo_url=f"/media/proof_photos/existing-{index}.jpg",
+				photo_type="proof",
+			)
+		self.client.force_login(self.staff)
+
+		response = self.client.post(
+			reverse("tickets:update_status", kwargs={"pk": ticket.request_id}),
+			{
+				"new_status": "in_progress",
+				"proof_photos": [
+					self.issue_photo("proof-new-1.jpg"),
+					self.issue_photo("proof-new-2.jpg"),
+				],
+			},
+			follow=True,
+		)
+
+		ticket.refresh_from_db()
+		self.assertContains(response, "A ticket can have no more than 5 proof photos.")
+		self.assertEqual(ticket.status, "in_progress")
+		self.assertEqual(ticket.photos.filter(photo_type="proof").count(), 4)
 
 	def test_reporter_can_edit_unassigned_pending_ticket(self):
 		ticket = RepairRequest.objects.create(
@@ -417,6 +475,47 @@ class TicketWorkflowTests(TestCase):
 		self.assertEqual(ticket.title, "Updated title")
 		self.assertEqual(ticket.description, "Updated details")
 		self.assertEqual(ticket.priority, "high")
+
+	def test_editing_ticket_appends_issue_photos_without_replacing_existing_photos(self):
+		ticket = RepairRequest.objects.create(
+			reporter=self.reporter,
+			room=self.room,
+			title="Original title",
+			description="Original details",
+			priority="medium",
+			status="pending",
+		)
+		RequestPhoto.objects.create(
+			request=ticket,
+			photo_url="/media/request_photos/existing.jpg",
+			photo_type="issue",
+		)
+		self.client.force_login(self.reporter)
+		edit_url = reverse("tickets:edit_ticket", kwargs={"pk": ticket.request_id})
+
+		edit_response = self.client.get(edit_url)
+
+		self.assertEqual(edit_response.status_code, 200)
+		self.assertContains(edit_response, "Saved issue photos are kept.")
+		self.assertContains(edit_response, 'data-photo-existing="1"')
+
+		response = self.client.post(
+			edit_url,
+			{
+				"title": "Updated title",
+				"description": "Updated details",
+				"priority": "high",
+				"building_id": str(self.building.building_id),
+				"room_id": str(self.room.room_id),
+				"photos": [self.issue_photo("new-issue.jpg")],
+			},
+		)
+
+		self.assertRedirects(
+			response,
+			reverse("tickets:ticket_detail", kwargs={"pk": ticket.request_id}),
+		)
+		self.assertEqual(ticket.photos.filter(photo_type="issue").count(), 2)
 
 	def test_reporter_cannot_edit_ticket_after_maintenance_staff_takes_it(self):
 		ticket = RepairRequest.objects.create(

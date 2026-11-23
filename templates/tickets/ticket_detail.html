@@ -223,9 +223,15 @@
 
           {% if ticket.status != "finished" %}
           <div class="form-group" style="margin-top:.75rem;">
-            <label for="inputProofPhotos">Completion Proof Photos</label>
-            <input type="file" id="inputProofPhotos" name="proof_photos" accept="image/*" multiple>
-            <small style="color:var(--color-text-muted);">Required to finish the ticket. Upload up to 5 JPG, PNG, or WEBP images.</small>
+            <div class="photo-upload" data-photo-upload>
+              <label for="inputProofPhotos">Completion Proof Photos</label>
+              <input type="file" id="inputProofPhotos" name="proof_photos" accept="image/*" multiple
+                     data-photo-input data-photo-max="{{ max_photo_count }}"
+                     data-photo-existing="{{ existing_proof_count }}">
+              <small style="color:var(--color-text-muted);">Required to finish the ticket. Up to {{ max_photo_count }} JPG, PNG, or WEBP images per ticket.</small>
+              <div class="photo-preview-grid" data-photo-preview></div>
+              <p class="photo-upload-error" data-photo-error role="alert" aria-live="polite"></p>
+            </div>
           </div>
           {% endif %}
 
@@ -261,4 +267,8 @@
     </div>
   </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+<script src="{% static 'js/tickets/photo_upload.js' %}"></script>
 {% endblock %}

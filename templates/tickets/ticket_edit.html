@@ -26,6 +26,7 @@ buildingSelect.addEventListener("change", async function () {
   });
 });
 </script>
+<script src="{% static 'js/tickets/photo_upload.js' %}"></script>
 {% endblock %}
 
 {% block nav_actions %}
@@ -83,9 +84,29 @@ buildingSelect.addEventListener("change", async function () {
         </div>
       </div>
 
-      <div class="form-section-title">Add Issue Photos (optional)</div>
-      <input type="file" name="photos" accept="image/*" multiple>
-      <small style="display:block;margin-top:.35rem;color:var(--color-text-muted);">Maximum 5 issue photos per ticket.</small>
+      <div class="form-section-title">Issue Photos</div>
+      {% if existing_issue_photos %}
+      <p class="photo-upload-note">Saved issue photos are kept. New photos will be added to them.</p>
+      <div class="photo-preview-grid saved-photo-grid">
+        {% for photo in existing_issue_photos %}
+        <div class="photo-preview-item">
+          <img src="{{ photo.photo_url }}" alt="Saved issue photo {{ forloop.counter }}">
+          <span class="photo-preview-label">Saved</span>
+        </div>
+        {% endfor %}
+      </div>
+      {% endif %}
+      <div class="photo-upload" data-photo-upload>
+        <label for="inputIssuePhotos">Add Issue Photos (optional)</label>
+        <input type="file" id="inputIssuePhotos" name="photos" accept="image/*" multiple
+               data-photo-input data-photo-max="{{ max_photo_count }}"
+               data-photo-existing="{{ existing_issue_count }}">
+        <small style="display:block;margin-top:.35rem;color:var(--color-text-muted);">
+          Maximum {{ max_photo_count }} issue photos per ticket.
+        </small>
+        <div class="photo-preview-grid" data-photo-preview></div>
+        <p class="photo-upload-error" data-photo-error role="alert" aria-live="polite"></p>
+      </div>
 
       <div style="margin-top:2rem;display:flex;gap:.75rem;justify-content:flex-end;">
         <a href="{% url 'tickets:ticket_detail' ticket.request_id %}" class="btn btn-secondary">Cancel</a>

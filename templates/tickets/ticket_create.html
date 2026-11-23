@@ -85,14 +85,18 @@
 
       <!-- ── Photos ─────────────────────────────────────────────── -->
       <div class="form-section-title">Issue Photos (required)</div>
-      <div class="photo-dropzone" id="photoDropzone">
-        <div class="dz-icon">📸</div>
-        <p>Drag &amp; drop photos here, or <strong>click to browse</strong></p>
-        <p>Supports JPG, PNG, WEBP. Max 5 files.</p>
-        <input type="file" id="inputPhotos" name="photos" accept="image/*" multiple
-               style="display:none;" required>
+      <div class="photo-upload" data-photo-upload>
+        <div class="photo-dropzone" id="photoDropzone" data-photo-dropzone>
+          <div class="dz-icon">📸</div>
+          <p>Drag &amp; drop photos here, or <strong>click to browse</strong></p>
+          <p>Supports JPG, PNG, WEBP. Max {{ max_photo_count }} files.</p>
+          <input type="file" id="inputPhotos" name="photos" accept="image/*" multiple
+                 data-photo-input data-photo-max="{{ max_photo_count }}" data-photo-existing="0"
+                 style="display:none;" required>
+        </div>
+        <div class="photo-preview-grid" id="photoPreviewGrid" data-photo-preview></div>
+        <p class="photo-upload-error" data-photo-error role="alert" aria-live="polite"></p>
       </div>
-      <div class="photo-preview-grid" id="photoPreviewGrid"></div>
 
       <div style="margin-top:2rem;display:flex;gap:.75rem;justify-content:flex-end;">
         <a href="{% url 'tickets:ticket_list' %}" class="btn btn-secondary">Cancel</a>
@@ -128,41 +132,6 @@ buildingSel.addEventListener('change', function() {
     })
     .catch(() => { roomSel.innerHTML = '<option value="">Error loading rooms</option>'; });
 });
-
-// ── Photo drag & drop / preview ──────────────────────────────────
-const dropzone  = document.getElementById('photoDropzone');
-const fileInput = document.getElementById('inputPhotos');
-const previewGrid = document.getElementById('photoPreviewGrid');
-
-dropzone.addEventListener('click', () => fileInput.click());
-
-dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
-dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
-dropzone.addEventListener('drop', e => {
-  e.preventDefault();
-  dropzone.classList.remove('dragover');
-  handleFiles(e.dataTransfer.files);
-});
-
-fileInput.addEventListener('change', () => handleFiles(fileInput.files));
-
-function handleFiles(files) {
-  previewGrid.innerHTML = '';
-  const MAX = 5;
-  const limited = Array.from(files).slice(0, MAX);
-  const transfer = new DataTransfer();
-  limited.forEach(file => transfer.items.add(file));
-  fileInput.files = transfer.files;
-  limited.forEach(file => {
-    const reader = new FileReader();
-    reader.onload = e => {
-      const img = document.createElement('img');
-      img.src = e.target.result;
-      img.alt = file.name;
-      previewGrid.appendChild(img);
-    };
-    reader.readAsDataURL(file);
-  });
-}
 </script>
+<script src="{% static 'js/tickets/photo_upload.js' %}"></script>
 {% endblock %}

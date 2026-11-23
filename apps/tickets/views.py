@@ -169,6 +169,7 @@ def ticket_create_view(request):
                 "buildings": buildings,
                 "priority_choices": PRIORITY_CHOICES,
                 "form_data": request.POST,
+                "max_photo_count": MAX_PHOTO_COUNT,
             })
 
         ticket = RepairRequest.objects.create(
@@ -211,6 +212,7 @@ def ticket_create_view(request):
         "buildings": buildings,
         "priority_choices": PRIORITY_CHOICES,
         "form_data": {},
+        "max_photo_count": MAX_PHOTO_COUNT,
     })
 
 
@@ -235,6 +237,7 @@ def ticket_detail_view(request, pk):
     staff_users = User.objects.filter(role__in=MAINTENANCE_ROLES).order_by("full_name")
     issue_photos = ticket.photos.filter(photo_type="issue")
     proof_photos = ticket.photos.filter(photo_type="proof")
+    existing_proof_count = proof_photos.count()
     unread_count = Notification.objects.filter(user=request.user, is_read=False).count()
 
     return render(request, "tickets/ticket_detail.html", {
@@ -244,6 +247,8 @@ def ticket_detail_view(request, pk):
         "photos": photos,
         "issue_photos": issue_photos,
         "proof_photos": proof_photos,
+        "existing_proof_count": existing_proof_count,
+        "max_photo_count": MAX_PHOTO_COUNT,
         "staff_users": staff_users,
         "status_choices": STATUS_CHOICES,
         "unread_count": unread_count,
@@ -273,6 +278,8 @@ def edit_ticket_view(request, pk):
         return redirect("tickets:ticket_detail", pk=pk)
 
     buildings = Building.objects.order_by("building_code")
+    existing_issue_photos = ticket.photos.filter(photo_type="issue")
+    existing_issue_count = existing_issue_photos.count()
     if request.method == "POST":
         title = request.POST.get("title", "").strip()
         description = request.POST.get("description", "").strip()
@@ -289,7 +296,6 @@ def edit_ticket_view(request, pk):
             errors.append("Please select a valid priority.")
         if not building_id or not room_id:
             errors.append("Please select a building and room.")
-        existing_issue_count = ticket.photos.filter(photo_type="issue").count()
         if existing_issue_count + len(photos) > MAX_PHOTO_COUNT:
             errors.append(f"A ticket can have no more than {MAX_PHOTO_COUNT} issue photos.")
         for photo_file in photos:
@@ -322,6 +328,9 @@ def edit_ticket_view(request, pk):
                 "ticket": ticket,
                 "buildings": buildings,
                 "priority_choices": PRIORITY_CHOICES,
+                "existing_issue_photos": existing_issue_photos,
+                "existing_issue_count": existing_issue_count,
+                "max_photo_count": MAX_PHOTO_COUNT,
             })
 
         ticket.title = title
@@ -351,6 +360,9 @@ def edit_ticket_view(request, pk):
         "ticket": ticket,
         "buildings": buildings,
         "priority_choices": PRIORITY_CHOICES,
+        "existing_issue_photos": existing_issue_photos,
+        "existing_issue_count": existing_issue_count,
+        "max_photo_count": MAX_PHOTO_COUNT,
     })
 
 
@@ -411,14 +423,11 @@ def update_status_view(request, pk):
     if new_status not in STATUS_CHOICES:
         messages.error(request, "Invalid status.")
         return redirect("tickets:ticket_detail", pk=pk)
-    if len(proof_photos) > MAX_PHOTO_COUNT:
-        messages.error(request, f"Upload no more than {MAX_PHOTO_COUNT} proof photos.")
+    existing_proof_count = ticket.photos.filter(photo_type="proof").count()
+    if existing_proof_count + len(proof_photos) > MAX_PHOTO_COUNT:
+        messages.error(request, f"A ticket can have no more than {MAX_PHOTO_COUNT} proof photos.")
         return redirect("tickets:ticket_detail", pk=pk)
     if new_status == "finished":
-        existing_proof_count = ticket.photos.filter(photo_type="proof").count()
-        if existing_proof_count + len(proof_photos) > MAX_PHOTO_COUNT:
-            messages.error(request, f"A ticket can have no more than {MAX_PHOTO_COUNT} proof photos.")
-            return redirect("tickets:ticket_detail", pk=pk)
         if existing_proof_count == 0 and not proof_photos:
             messages.error(request, "At least one proof photo is required to finish this ticket.")
             return redirect("tickets:ticket_detail", pk=pk)
